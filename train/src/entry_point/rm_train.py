@@ -25,6 +25,8 @@ from trl.trainer.utils import RewardDataCollatorWithPadding
 import logging
 from multiprocessing import cpu_count
 
+from src.models.qwen.modeling_qwen import QWenForSequenceClassification
+
 tqdm.pandas()
 accelerator = Accelerator()
 # Setup logging
@@ -163,8 +165,8 @@ def preprocess_function(tokenizer: PreTrainedTokenizerBase, examples: Dict[str, 
         "attention_mask_rejected": [],
     }
     for chosen, rejected in zip(examples["chosen"], examples["rejected"]):
-        tokenized_chosen = tokenizer(chosen, add_special_tokens=False)
-        tokenized_rejected = tokenizer(rejected, add_special_tokens=False)
+        tokenized_chosen = tokenizer(chosen, add_special_tokens=False, padding=True)
+        tokenized_rejected = tokenizer(rejected, add_special_tokens=False, padding=True)
 
         new_examples["input_ids_chosen"].append(tokenized_chosen["input_ids"])
         new_examples["attention_mask_chosen"].append(tokenized_chosen["attention_mask"])
@@ -192,10 +194,15 @@ def main():
                 "pad_token": "<unk>",
             }
         )
+    elif "qwen" in script_args.model_name:
+        tokenizer = AutoTokenizer.from_pretrained(script_args.model_name)
+        tokenizer.pad_token_id = tokenizer.eod_id
     else:
         tokenizer = AutoTokenizer.from_pretrained(script_args.model_name)
         tokenizer.add_special_tokens({"pad_token": tokenizer.unk_token})
+
     tokenizer.padding_side = "left"
+
     print_rank_0(
         f"unk token: {tokenizer.unk_token}, "
         f"unk token id: {tokenizer.unk_token_id}, "
@@ -320,13 +327,23 @@ def main():
         quantization_config = None
 
     # Model must be loaded after create `TrainingArguments`!!!
-    model = AutoModelForSequenceClassification.from_pretrained(
-        script_args.model_name,
-        quantization_config=quantization_config,
-        device_map=device_map,
-        trust_remote_code=script_args.trust_remote_code,
-        num_labels=1,
-    )
+    if "qwen" in script_args.model_name:
+        model = QWenForSequenceClassification.from_pretrained(
+            script_args.model_name,
+            quantization_config=quantization_config,
+            device_map=device_map,
+            trust_remote_code=script_args.trust_remote_code,
+            num_labels=1,
+        )
+    else:
+        model = AutoModelForSequenceClassification.from_pretrained(
+            script_args.model_name,
+            quantization_config=quantization_config,
+            device_map=device_map,
+            trust_remote_code=script_args.trust_remote_code,
+            num_labels=1,
+        )
+
     model.config.pad_token_id = tokenizer.pad_token_id
 
     # Define the LoraConfig

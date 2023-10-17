@@ -12,3 +12,4 @@ infer_res
 wandb
 hf_cache_dir
 data
+venv
