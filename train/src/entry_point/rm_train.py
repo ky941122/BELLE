@@ -4,7 +4,7 @@ from functools import partial
 import math
 import os
 import sys
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
 from accelerate import Accelerator
 from datasets import load_dataset
@@ -155,9 +155,29 @@ class ScriptArguments:
     )
 
 
+def preprocess_qwen(tokenizer, source, system_message = "You are a helpful assistant."):
+    roles = {"user": "<|im_start|>user", "assistant": "<|im_start|>assistant", "human": "<|im_start|>user"}
+    im_start = tokenizer.im_start_id
+    im_end = tokenizer.im_end_id
+    nl_tokens = tokenizer('\n').input_ids
+    _system = tokenizer('system').input_ids + nl_tokens
+    _user = tokenizer('user').input_ids + nl_tokens
+    _assistant = tokenizer('assistant').input_ids + nl_tokens
+    system = [im_start] + _system + tokenizer(system_message).input_ids + [im_end] + nl_tokens
+
+    input_id = []
+    input_id += system
+    for j, sentence in enumerate(source):
+        role = roles[sentence["from"].lower()]
+        _input_id = tokenizer(role).input_ids + nl_tokens + tokenizer(sentence["value"]).input_ids + [im_end] + nl_tokens
+        input_id += _input_id
+
+    return input_id
+
+
 # Tokenize chosen/rejected pairs of inputs
 # Adapt this section to your needs for custom datasets
-def preprocess_function(tokenizer: PreTrainedTokenizerBase, examples: Dict[str, Any]):
+def preprocess_function(tokenizer: PreTrainedTokenizerBase, use_qwen, examples: Dict[str, Any]):
     new_examples = {
         "input_ids_chosen": [],
         "attention_mask_chosen": [],
@@ -165,8 +185,15 @@ def preprocess_function(tokenizer: PreTrainedTokenizerBase, examples: Dict[str, 
         "attention_mask_rejected": [],
     }
     for chosen, rejected in zip(examples["chosen"], examples["rejected"]):
-        tokenized_chosen = tokenizer(chosen, add_special_tokens=False, padding=True)
-        tokenized_rejected = tokenizer(rejected, add_special_tokens=False, padding=True)
+        if use_qwen:
+            chosen_input_ids = preprocess_qwen(tokenizer, chosen)
+            tokenized_chosen = {"input_ids": chosen_input_ids, "attention_mask": [1] * len(chosen_input_ids)}
+
+            rejected_input_ids = preprocess_qwen(tokenizer, rejected)
+            tokenized_rejected = {"input_ids": rejected_input_ids, "attention_mask": [1] * len(rejected_input_ids)}
+        else:
+            tokenized_chosen = tokenizer(chosen, add_special_tokens=False)
+            tokenized_rejected = tokenizer(rejected, add_special_tokens=False)
 
         new_examples["input_ids_chosen"].append(tokenized_chosen["input_ids"])
         new_examples["attention_mask_chosen"].append(tokenized_chosen["attention_mask"])
@@ -176,6 +203,7 @@ def preprocess_function(tokenizer: PreTrainedTokenizerBase, examples: Dict[str, 
         )
 
     return new_examples
+
 
 def main():
     parser = HfArgumentParser(ScriptArguments)
@@ -221,7 +249,7 @@ def main():
 
         # Preprocess the dataset and filter out examples that are longer than script_args.max_length
         train_dataset = train_dataset.map(
-            partial(preprocess_function, tokenizer),
+            partial(preprocess_function, tokenizer, "qwen" in script_args.model_name),
             batched=True,
             num_proc=max(cpu_count() // 2, 1),
             remove_columns=["chosen", "rejected"],
@@ -232,7 +260,7 @@ def main():
         )
 
         eval_dataset = eval_dataset.map(
-            partial(preprocess_function, tokenizer),
+            partial(preprocess_function, tokenizer, "qwen" in script_args.model_name),
             batched=True,
             num_proc=max(cpu_count() // 2, 1),
             remove_columns=["chosen", "rejected"],
