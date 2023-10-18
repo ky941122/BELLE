@@ -34,7 +34,7 @@ accelerate launch \
     --num_train_epochs 1 \
     --seq_length $cutoff_len \
     --gradient_accumulation_steps 8 \
-    --gradient_checkpointing True \
+    --gradient_checkpointing False \
     --load_in_8bit False \
     --load_in_4bit False \
     --use_lora False \
