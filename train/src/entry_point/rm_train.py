@@ -230,6 +230,7 @@ def main():
         tokenizer.add_special_tokens({"pad_token": tokenizer.unk_token})
 
     tokenizer.padding_side = "left"
+    tokenizer.model_max_length = script_args.seq_length
 
     print_rank_0(
         f"unk token: {tokenizer.unk_token}, "

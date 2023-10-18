@@ -1,5 +1,5 @@
-export CUDA_VISIBLE_DEVICES="3,4,5,6,7"
-gpus=5
+export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
+gpus=8
 
 BELLE_PATH="/nfs/a100-80G-17/kangyu/consistency_hallucinations/BELLE"
 export PYTHONPATH="$BELLE_PATH/train"

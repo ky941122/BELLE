@@ -40,7 +40,7 @@
             "adam_w_mode": true
         }
     },
-    "gradient_accumulation_steps": "auto",
+    "gradient_accumulation_steps": 8,
     "gradient_clipping": "auto",
     "steps_per_print": 1000,
     "train_batch_size": "auto",
