@@ -223,7 +223,7 @@ def main():
             }
         )
     elif "qwen" in script_args.model_name:
-        tokenizer = AutoTokenizer.from_pretrained(script_args.model_name)
+        tokenizer = AutoTokenizer.from_pretrained(script_args.model_name, trust_remote_code=True)
         tokenizer.pad_token_id = tokenizer.eod_id
     else:
         tokenizer = AutoTokenizer.from_pretrained(script_args.model_name)
