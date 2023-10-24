@@ -1,4 +1,7 @@
 # coding=utf-8
+from accelerate import Accelerator
+accelerator = Accelerator()
+
 import os
 import sys
 import time
@@ -7,7 +10,6 @@ import json
 from typing import Optional
 from dataclasses import dataclass, field
 from functools import partial
-from accelerate import Accelerator
 import torch
 import torch.distributed as dist
 from transformers import (
@@ -25,6 +27,8 @@ from trl.core import LengthSampler
 from datasets import load_dataset, Dataset
 import numpy as np
 from tqdm import tqdm
+tqdm.pandas()
+
 import matplotlib.pyplot as plt
 import logging
 from multiprocessing import cpu_count
@@ -39,8 +43,6 @@ if version.parse(transformers.__version__) <= version.parse("4.30.2"):
 else:
     from transformers import Trainer
 
-tqdm.pandas()
-accelerator = Accelerator()
 # Setup logging
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -414,7 +416,7 @@ def main():
     os.makedirs(rs_args.output_reward_path, exist_ok=True)
 
     log_file = os.path.join(training_args.output_dir, "print_log.txt")
-    # local_rank = accelerator.local_process_index
+    local_rank = accelerator.local_process_index
 
     # Load the tokenizer for model under training
     if rs_args.use_llama_model:
@@ -565,7 +567,7 @@ def main():
         raise NotImplementedError("We only support local data collection strategy now.")
 
     print("M:", M, "K:", K)
-    print_rank_0(rs_args, log_file)
+    print_rank_0(str(rs_args), log_file)
 
     data_size = len(instruction_dataset)
     random_idxs = np.arange(data_size)
