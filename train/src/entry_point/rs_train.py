@@ -1,7 +1,4 @@
 # coding=utf-8
-from accelerate import Accelerator
-accelerator = Accelerator()
-
 import os
 import sys
 import time
@@ -10,6 +7,8 @@ import json
 from typing import Optional
 from dataclasses import dataclass, field
 from functools import partial
+
+from accelerate import Accelerator
 import torch
 import torch.distributed as dist
 from transformers import (
@@ -27,8 +26,6 @@ from trl.core import LengthSampler
 from datasets import load_dataset, Dataset
 import numpy as np
 from tqdm import tqdm
-tqdm.pandas()
-
 import matplotlib.pyplot as plt
 import logging
 from multiprocessing import cpu_count
@@ -42,6 +39,9 @@ if version.parse(transformers.__version__) <= version.parse("4.30.2"):
     from src.trainer import MyTrainer as Trainer
 else:
     from transformers import Trainer
+
+accelerator = Accelerator()
+tqdm.pandas()
 
 # Setup logging
 logging.basicConfig(
@@ -416,7 +416,7 @@ def main():
     os.makedirs(rs_args.output_reward_path, exist_ok=True)
 
     log_file = os.path.join(training_args.output_dir, "print_log.txt")
-    local_rank = accelerator.local_process_index
+    # local_rank = accelerator.local_process_index
 
     # Load the tokenizer for model under training
     if rs_args.use_llama_model:
