@@ -417,16 +417,7 @@ def _get_batch_dataset_local(
 
 
 def main():
-    parser = HfArgumentParser((
-        TrainingArguments,
-        RejectSamplingArguments
-    ))
-    training_args, rs_args = parser.parse_args_into_dataclasses()
 
-    # os.makedirs(rs_args.output_reward_path, exist_ok=True)
-
-    log_file = os.path.join(training_args.output_dir, "print_log.txt")
-    # local_rank = accelerator.local_process_index
 
 
 
@@ -441,6 +432,20 @@ def main():
 
 
 
+
+
+
+
+    parser = HfArgumentParser((
+        TrainingArguments,
+        RejectSamplingArguments
+    ))
+    training_args, rs_args = parser.parse_args_into_dataclasses()
+
+    # os.makedirs(rs_args.output_reward_path, exist_ok=True)
+
+    log_file = os.path.join(training_args.output_dir, "print_log.txt")
+    # local_rank = accelerator.local_process_index
 
     # Load the tokenizer for model under training
     if rs_args.use_llama_model:
@@ -709,5 +714,18 @@ def main():
 
 
 if __name__ == "__main__":
+
+
+
+
+
+    print("%" * 100)
+    print(accelerator.__dict__)
+    print("%" * 100)
+
+
+
+
+
     main()
 
