@@ -1240,7 +1240,7 @@ def main():
         batch_input = instruction_dataset.select(random_idxs[iteration * M: end_idx])
 
         model.gradient_checkpointing_disable()
-        model.config.use_cache = False
+        model.config.use_cache = True
 
         start_time = time.time()
         if collection_strategy == "local":
