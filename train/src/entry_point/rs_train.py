@@ -65,7 +65,7 @@ def print_rank_0(msg, log_file):
 
 
 @dataclass
-class RejectSamplingArguments(TrainingArguments):
+class RejectSamplingArguments:
     """
     Define a class RewardPipeArguments to configure reward pipeline.
     """
