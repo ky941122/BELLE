@@ -299,7 +299,7 @@ def _get_batch_dataset_local(
         output_min_length=16,
         output_max_length=48,
         infer_batch_size=8,
-        generation_kwargs={},
+        generation_kwargs=None,
         tokenizer=None,
         training_args=None,
         queries_to_scores_fn=None,
@@ -317,7 +317,7 @@ def _get_batch_dataset_local(
         gen_len = output_length_sampler()
         generation_kwargs["max_new_tokens"] = gen_len
 
-        inputs = torch.tensor(input_ids, dtype=torch.long).to(training_args.device)
+        inputs = torch.tensor(input_ids, dtype=torch.long).to(accelerator.device)
         with torch.no_grad():
             outputs = model.generate(inputs, **generation_kwargs)
         generated_texts = tokenizer.batch_decode(outputs, skip_special_tokens=True)
@@ -539,7 +539,7 @@ def main():
     reward_pipe = pipeline(
         "text-classification",
         model=reward_model,
-        device=f"cuda:{training_args.local_rank}",
+        device=accelerator.device,
         tokenizer=rm_tokenizer
     )
 
@@ -578,7 +578,7 @@ def main():
         "top_k": 0.0,
         "top_p": 1.0,
         "do_sample": True,
-        "pad_token_id": tokenizer.eos_token_id,
+        "pad_token_id": tokenizer.pad_token_id,
         "temperature": 0.85,
     }
 
@@ -589,7 +589,7 @@ def main():
         batch_input = instruction_dataset.select(random_idxs[iteration * M: end_idx])
 
         model.gradient_checkpointing_disable()
-        model.config.use_cache = True
+        model.config.use_cache = False
 
         start_time = time.time()
         if collection_strategy == "local":
@@ -674,7 +674,7 @@ def main():
         os.makedirs(saved_path, exist_ok=True)
         trainer.save_model(saved_path)
 
-        accelerator.wait_for_everyone()
+        # accelerator.wait_for_everyone()
 
         end_time = time.time()
         print_rank_0("It takes {} seconds to train one stage".format(end_time - start_time), log_file)
