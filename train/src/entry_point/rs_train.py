@@ -1167,6 +1167,7 @@ def main():
         trust_remote_code=True
     )
     model.config.pad_token_id = tokenizer.pad_token_id
+    model.to(accelerator.device)
 
     # load reward model
     if "qwen" in rs_args.reward_model_name.lower():
@@ -1241,6 +1242,7 @@ def main():
 
         model.gradient_checkpointing_disable()
         model.config.use_cache = True
+        model.eval()
 
         start_time = time.time()
         if collection_strategy == "local":
