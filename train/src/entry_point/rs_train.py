@@ -195,7 +195,7 @@ def preprocess_query_qwen(tokenizer, source, system_message = "You are a helpful
         system=system_message
     )
 
-    return input_id
+    return raw_text, input_id
 
 
 def preprocess_sft_qwen(
@@ -496,11 +496,12 @@ def main():
             "You can't load the model in 8 bits and 4 bits at the same time"
         )
     elif rs_args.load_in_8bit or rs_args.load_in_4bit:
-        quantization_config = BitsAndBytesConfig(
-            load_in_8bit=rs_args.load_in_8bit, load_in_4bit=rs_args.load_in_4bit
-        )
-        # Copy the model to each device
-        device_map = {"": local_rank}
+        # quantization_config = BitsAndBytesConfig(
+        #     load_in_8bit=rs_args.load_in_8bit, load_in_4bit=rs_args.load_in_4bit
+        # )
+        # # Copy the model to each device
+        # device_map = {"": local_rank}
+        raise NotImplementedError()
     else:
         device_map = None
         quantization_config = None
