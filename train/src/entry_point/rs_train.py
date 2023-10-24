@@ -671,6 +671,8 @@ def main():
         os.makedirs(saved_path, exist_ok=True)
         trainer.save_model(saved_path)
 
+        accelerator.wait_for_everyone()
+
         end_time = time.time()
         print_rank_0("It takes {} seconds to train one stage".format(end_time - start_time), log_file)
 
