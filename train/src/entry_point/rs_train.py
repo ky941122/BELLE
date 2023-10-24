@@ -7,6 +7,7 @@ import json
 from typing import Optional
 from dataclasses import dataclass, field
 from functools import partial
+from accelerate import Accelerator
 import torch
 import torch.distributed as dist
 from transformers import (
@@ -21,7 +22,6 @@ from transformers import (
 )
 from transformers.trainer_pt_utils import LabelSmoother
 from trl.core import LengthSampler
-from accelerate import Accelerator
 from datasets import load_dataset, Dataset
 import numpy as np
 from tqdm import tqdm
