@@ -963,7 +963,7 @@ def _get_batch_dataset_local(
     reward_eva = []
     reward_train = []
     batch_output = []
-    for i, sample in enumerate(batch_input):
+    for i, sample in tqdm(enumerate(batch_input)):
         input_ids = [sample['input_ids'] for _ in range(K)]
 
         gen_len = output_length_sampler()
