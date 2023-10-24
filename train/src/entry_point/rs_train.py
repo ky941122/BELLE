@@ -41,6 +41,16 @@ else:
     from transformers import Trainer
 
 accelerator = Accelerator()
+
+
+
+
+print("*" * 100)
+print(accelerator.__dict__)
+print("*" * 100)
+
+
+
 tqdm.pandas()
 
 # Setup logging
