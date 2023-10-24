@@ -414,7 +414,7 @@ def main():
     os.makedirs(rs_args.output_reward_path, exist_ok=True)
 
     log_file = os.path.join(training_args.output_dir, "print_log.txt")
-    local_rank = accelerator.local_process_index
+    # local_rank = accelerator.local_process_index
 
     # Load the tokenizer for model under training
     if rs_args.use_llama_model:
