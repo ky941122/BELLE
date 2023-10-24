@@ -675,6 +675,10 @@ def main():
         print_rank_0("It takes {} seconds to train one stage".format(end_time - start_time), log_file)
 
         if (iteration + 1) * M > data_size:
-            logger.info("One instruction epoch is completed!!!")
+            print_rank_0("One instruction epoch is completed!!!", log_file)
             break
+
+
+if __name__ == "__main__":
+    main()
 
