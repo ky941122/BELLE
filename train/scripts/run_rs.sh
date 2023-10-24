@@ -45,8 +45,6 @@ accelerate launch \
     --gradient_checkpointing True \
     --load_in_8bit False \
     --load_in_4bit False \
-    --use_lora False \
-    --trust_remote_code True \
     --output_dir $output_dir \
     --use_llama_model False \
     --use_rm_llama False \
