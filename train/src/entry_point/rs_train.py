@@ -428,6 +428,20 @@ def main():
     log_file = os.path.join(training_args.output_dir, "print_log.txt")
     # local_rank = accelerator.local_process_index
 
+
+
+
+
+
+    print("^" * 100)
+    print(accelerator.__dict__)
+    print("^" * 100)
+
+
+
+
+
+
     # Load the tokenizer for model under training
     if rs_args.use_llama_model:
         tokenizer = LlamaTokenizer.from_pretrained(rs_args.model_name)
