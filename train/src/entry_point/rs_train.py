@@ -422,14 +422,14 @@ def main():
 
 
 
-
-
-    print("^" * 100)
-    print(accelerator.__dict__)
-    print("^" * 100)
-
-
-
+    #
+    #
+    # print("^" * 100)
+    # print(accelerator.__dict__)
+    # print("^" * 100)
+    #
+    #
+    #
 
 
 
@@ -457,12 +457,12 @@ def main():
     training_args, rs_args = parser.parse_args_into_dataclasses()
 
 
-
-
-    print("%" * 100)
-    print(accelerator.__dict__)
-    print("%" * 100)
-
+    #
+    #
+    # print("%" * 100)
+    # print(accelerator.__dict__)
+    # print("%" * 100)
+    #
 
 
 
