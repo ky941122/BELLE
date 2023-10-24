@@ -43,12 +43,12 @@ else:
 accelerator = Accelerator()
 
 
-
-
-print("*" * 100)
-print(accelerator.__dict__)
-print("*" * 100)
-
+#
+#
+# print("*" * 100)
+# print(accelerator.__dict__)
+# print("*" * 100)
+#
 
 
 tqdm.pandas()
@@ -440,7 +440,32 @@ def main():
         TrainingArguments,
         RejectSamplingArguments
     ))
+
+
+
+
+
+    print("*" * 100)
+    print(accelerator.__dict__)
+    print("*" * 100)
+
+
+
+
+
+
     training_args, rs_args = parser.parse_args_into_dataclasses()
+
+
+
+
+    print("%" * 100)
+    print(accelerator.__dict__)
+    print("%" * 100)
+
+
+
+
 
     # os.makedirs(rs_args.output_reward_path, exist_ok=True)
 
@@ -718,10 +743,10 @@ if __name__ == "__main__":
 
 
 
-
-    print("%" * 100)
-    print(accelerator.__dict__)
-    print("%" * 100)
+    #
+    # print("%" * 100)
+    # print(accelerator.__dict__)
+    # print("%" * 100)
 
 
 
