@@ -62,7 +62,7 @@ from torch.utils.data.distributed import DistributedSampler
 from transformers.configuration_utils import PretrainedConfig
 from transformers.data.data_collator import DataCollator, DataCollatorWithPadding, default_data_collator
 from transformers.debug_utils import DebugOption, DebugUnderflowOverflow
-from transformers.deepspeed import deepspeed_init, is_deepspeed_zero3_enabled
+from transformers.deepspeed import deepspeed_init, is_deepspeed_zero3_enabled, deepspeed_load_checkpoint, is_deepspeed_available
 from transformers.dependency_versions_check import dep_version_check
 from transformers.modelcard import TrainingSummary
 from transformers.modeling_utils import PreTrainedModel, load_sharded_checkpoint, unwrap_model
@@ -141,6 +141,8 @@ from transformers.utils import (
     is_datasets_available,
     is_in_notebook,
     is_ipex_available,
+    is_peft_available,
+    is_safetensors_available,
     is_sagemaker_dp_enabled,
     is_sagemaker_mp_enabled,
     is_torch_compile_available,
@@ -193,8 +195,37 @@ else:
     IS_SAGEMAKER_MP_POST_1_10 = False
 
 
-skip_first_batches = None
 
+if is_safetensors_available():
+    import safetensors.torch
+
+
+if is_peft_available():
+    from peft import PeftModel
+
+
+if is_accelerate_available():
+    from accelerate import Accelerator, skip_first_batches
+    from accelerate import __version__ as accelerate_version
+    from accelerate.utils import DistributedDataParallelKwargs, GradientAccumulationPlugin
+
+    if version.parse(accelerate_version) > version.parse("0.20.3"):
+        from accelerate.utils import (
+            load_fsdp_model,
+            load_fsdp_optimizer,
+            save_fsdp_model,
+            save_fsdp_optimizer,
+        )
+
+    if is_deepspeed_available():
+        from accelerate.utils import DeepSpeedSchedulerWrapper
+
+
+if TYPE_CHECKING:
+    import optuna
+
+
+skip_first_batches = None
 
 
 logger = logging.get_logger(__name__)
@@ -308,6 +339,8 @@ class RejectSamplingTrainer:
         self.hp_name = None
         self.deepspeed = None
         self.is_in_train = False
+
+        self.create_accelerator_and_postprocess()
 
         # memory metrics - must set up as early as possible
         self._memory_tracker = TrainerMemoryTracker(self.args.skip_memory_metrics)
@@ -3805,3 +3838,48 @@ class RejectSamplingTrainer:
         if not self.repo.is_repo_clean():
             self.repo.git_commit("Add *.sagemaker patterns to .gitignore.")
             self.repo.git_push()
+
+    def create_accelerator_and_postprocess(self):
+        grad_acc_kwargs = {"num_steps": self.args.gradient_accumulation_steps}
+        if version.parse(accelerate_version) > version.parse("0.20.3"):
+            grad_acc_kwargs["sync_with_dataloader"] = False
+        gradient_accumulation_plugin = GradientAccumulationPlugin(**grad_acc_kwargs)
+
+        # create accelerator object
+        self.accelerator = Accelerator(
+            dispatch_batches=self.args.dispatch_batches,
+            deepspeed_plugin=self.args.deepspeed_plugin,
+            gradient_accumulation_plugin=gradient_accumulation_plugin,
+        )
+
+        # deepspeed and accelerate flags covering both trainer args and accelerate launcher
+        self.is_deepspeed_enabled = getattr(self.accelerator.state, "deepspeed_plugin", None) is not None
+        self.is_fsdp_enabled = getattr(self.accelerator.state, "fsdp_plugin", None) is not None
+
+        # post accelerator creation setup
+        if self.is_fsdp_enabled:
+            fsdp_plugin = self.accelerator.state.fsdp_plugin
+            fsdp_plugin.limit_all_gathers = self.args.fsdp_config.get(
+                "limit_all_gathers", fsdp_plugin.limit_all_gathers
+            )
+            if is_accelerate_available("0.23.0"):
+                fsdp_plugin.activation_checkpointing = self.args.fsdp_config.get(
+                    "activation_checkpointing", fsdp_plugin.activation_checkpointing
+                )
+                if fsdp_plugin.activation_checkpointing and self.args.gradient_checkpointing:
+                    raise ValueError(
+                        "The activation_checkpointing in FSDP config and the gradient_checkpointing in training arg "
+                        "can't be set to True simultaneously. Please use FSDP's activation_checkpointing logic "
+                        "when using FSDP."
+                    )
+
+        if self.is_deepspeed_enabled:
+            if getattr(self.args, "hf_deepspeed_config", None) is None:
+                from transformers.integrations.deepspeed import HfTrainerDeepSpeedConfig
+
+                ds_plugin = self.accelerator.state.deepspeed_plugin
+
+                ds_plugin.hf_ds_config = HfTrainerDeepSpeedConfig(ds_plugin.hf_ds_config.config)
+                ds_plugin.deepspeed_config = ds_plugin.hf_ds_config.config
+                ds_plugin.hf_ds_config.trainer_config_process(self.args)
+
