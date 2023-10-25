@@ -11,6 +11,7 @@ from functools import partial
 from accelerate import Accelerator
 import torch
 import torch.distributed as dist
+import transformers
 from transformers import (
     pipeline,
     AutoTokenizer,
@@ -40,13 +41,7 @@ from multiprocessing import cpu_count
 
 from src.models.qwen.modeling_qwen import QWenForSequenceClassification
 from src.models.qwen.qwen_generation_utils import make_context
-
-import transformers
-from packaging import version
-if version.parse(transformers.__version__) <= version.parse("4.30.2"):
-    from src.trainer import MyTrainer as Trainer
-else:
-    from transformers import Trainer
+from src.trainer import RejectSamplingTrainer
 
 accelerator = Accelerator()
 tqdm.pandas()
@@ -970,8 +965,16 @@ def _get_batch_dataset_local(
         generation_kwargs["max_new_tokens"] = gen_len
 
         inputs = torch.tensor(input_ids, dtype=torch.long).to(accelerator.device)
-        with torch.no_grad():
-            outputs = model.generate(inputs, **generation_kwargs)
+
+
+
+
+
+        outputs = model.generate(inputs, **generation_kwargs)
+
+
+
+
         generated_texts = tokenizer.batch_decode(outputs, skip_special_tokens=True)
         assert len(input_ids) == len(generated_texts)
         generated_texts = [
@@ -1234,6 +1237,9 @@ def main():
         "temperature": 0.85,
     }
 
+
+
+
     for iteration in range(ITERATION):
         print_rank_0("#" * 20 + "Start Iteration {}".format(iteration) + "#" * 20, log_file)
 
@@ -1244,10 +1250,23 @@ def main():
         model.config.use_cache = True
         model.eval()
 
+
+
+        trainer = RejectSamplingTrainer(
+            model=model,
+            tokenizer=tokenizer,
+            args=training_args,
+            data_collator=transformers.DataCollatorForSeq2Seq(
+                tokenizer, pad_to_multiple_of=8, return_tensors="pt", padding=True
+            ),
+        )
+
+
+
         start_time = time.time()
         if collection_strategy == "local":
             selected_dataset = _get_batch_dataset_local(
-                model,
+                trainer,
                 batch_input,
                 K,
                 iteration,
@@ -1312,7 +1331,12 @@ def main():
             log_file,
         )
 
-        trainer = Trainer(
+
+
+
+
+
+        trainer = RejectSamplingTrainer(
             model=model,
             tokenizer=tokenizer,
             args=training_args,
@@ -1321,6 +1345,13 @@ def main():
                 tokenizer, pad_to_multiple_of=8, return_tensors="pt", padding=True
             ),
         )
+
+
+
+
+
+
+
         trainer.train()
 
         saved_path = os.path.join(training_args.output_dir, "iteration_{}".format(iteration))
