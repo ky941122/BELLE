@@ -14,6 +14,7 @@ import torch.distributed as dist
 import transformers
 from transformers import (
     pipeline,
+    default_data_collator,
     AutoTokenizer,
     AutoModelForCausalLM,
     AutoModelForSequenceClassification,
@@ -33,8 +34,7 @@ from multiprocessing import cpu_count
 
 from src.models.qwen.modeling_qwen import QWenForSequenceClassification
 from src.models.qwen.qwen_generation_utils import make_context
-from src.trainer import RejectSamplingTrainer
-from src.utils import prepare_deepspeed
+from src.rs_trainer import RejectSamplingTrainer
 
 accelerator = Accelerator()
 tqdm.pandas()
@@ -597,33 +597,50 @@ def main():
 
 
 
+
+    rs_trainer = RejectSamplingTrainer(
+        model=model,
+        args=training_args,
+        train_dataset=Dataset.from_dict({"text": [" "]}),
+        eval_dataset=Dataset.from_dict({}),
+        tokenizer=tokenizer,
+        data_collator=default_data_collator,
+        compute_metrics=None,
+        preprocess_logits_for_metrics=None,
+    )
+    rs_trainer.train(resume_from_checkpoint=False, is_first_time=True)
+
+
+
+
+
     for iteration in range(ITERATION):
         print_rank_0("#" * 20 + "Start Iteration {}".format(iteration) + "#" * 20, log_file)
 
         end_idx = np.min([data_size, (iteration + 1) * M])
         batch_input = instruction_dataset.select(random_idxs[iteration * M: end_idx])
 
-        # model.gradient_checkpointing_disable()
-        # model.config.use_cache = True
+        model.gradient_checkpointing_disable()
+        model.config.use_cache = True
         # model.eval()
         #
         #
-
-        trainer = RejectSamplingTrainer(
-            model=model,
-            tokenizer=tokenizer,
-            args=training_args,
-            data_collator=transformers.DataCollatorForSeq2Seq(
-                tokenizer, pad_to_multiple_of=8, return_tensors="pt", padding=True
-            ),
-        )
+        #
+        # trainer = RejectSamplingTrainer(
+        #     model=model,
+        #     tokenizer=tokenizer,
+        #     args=training_args,
+        #     data_collator=transformers.DataCollatorForSeq2Seq(
+        #         tokenizer, pad_to_multiple_of=8, return_tensors="pt", padding=True
+        #     ),
+        # )
 
 
 
         start_time = time.time()
         if collection_strategy == "local":
             selected_dataset = _get_batch_dataset_local(
-                trainer,
+                rs_trainer.tmp_model,
                 batch_input,
                 K,
                 iteration,
