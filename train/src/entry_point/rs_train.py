@@ -327,7 +327,7 @@ def _get_batch_dataset_local(
 
 
 
-        outputs = model.generate(inputs, **generation_kwargs)
+        outputs = model.generate(inputs, generation_kwargs)
 
 
 
