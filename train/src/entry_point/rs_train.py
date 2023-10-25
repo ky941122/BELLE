@@ -34,7 +34,7 @@ from multiprocessing import cpu_count
 
 from src.models.qwen.modeling_qwen import QWenForSequenceClassification
 from src.models.qwen.qwen_generation_utils import make_context
-from src.rs_trainer import RejectSamplingTrainer
+from src.rej_samp_trainer import RejectSamplingTrainer
 
 accelerator = Accelerator()
 tqdm.pandas()
