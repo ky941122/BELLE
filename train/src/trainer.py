@@ -9,8 +9,8 @@ from src.models.generation_utils import GenerationMixin
 
 class RejectSamplingTrainer(Trainer):
     def __init__(self, **kwargs):
-        self.tmp_model = self._prepare_deepspeed(kwargs["model"])
         super().__init__(**kwargs)
+        self.tmp_model = self._prepare_deepspeed(kwargs["model"])
 
     def _prepare_deepspeed(self, model):
         # Adapted from accelerate: https://github.com/huggingface/accelerate/blob/739b135f8367becb67ffaada12fe76e3aa60fefd/src/accelerate/accelerator.py#L1473
