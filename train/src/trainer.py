@@ -1,4 +1,5 @@
 from peft import PeftModel
+import deepspeed
 from transformers.trainer import *
 from transformers import Seq2SeqTrainer, __version__
 from transformers.deepspeed import is_deepspeed_zero3_enabled
@@ -7,47 +8,46 @@ from src.models.generation_utils import GenerationMixin
 
 
 class RejectSamplingTrainer(Trainer):
-    def generate(self, inputs, generation_kwargs):
-        args = self.args
+    def __init__(self, **kwargs):
+        self.tmp_model = self._prepare_deepspeed(kwargs["model"])
+        super().__init__(**kwargs)
 
-        # if eval is called w/o train, handle model prep here
-        if self.is_deepspeed_enabled and self.deepspeed is None:
-            _, _ = deepspeed_init(self, num_training_steps=0, inference=True)
+    def _prepare_deepspeed(self, model):
+        # Adapted from accelerate: https://github.com/huggingface/accelerate/blob/739b135f8367becb67ffaada12fe76e3aa60fefd/src/accelerate/accelerator.py#L1473
+        deepspeed_plugin = self.accelerator.state.deepspeed_plugin
+        config_kwargs = deepspeed_plugin.deepspeed_config
+        if model is not None:
+            if hasattr(model, "config"):
+                hidden_size = (
+                    max(model.config.hidden_sizes)
+                    if getattr(model.config, "hidden_sizes", None)
+                    else getattr(model.config, "hidden_size", None)
+                )
+                if hidden_size is not None and config_kwargs["zero_optimization"]["stage"] == 3:
+                    # Note that `stage3_prefetch_bucket_size` can produce DeepSpeed messages like: `Invalidate trace cache @ step 0: expected module 1, but got module 0`
+                    # This is expected and is not an error, see: https://github.com/microsoft/DeepSpeed/discussions/4081
+                    config_kwargs.update(
+                        {
+                            "zero_optimization.reduce_bucket_size": hidden_size * hidden_size,
+                            "zero_optimization.stage3_param_persistence_threshold": 10 * hidden_size,
+                            "zero_optimization.stage3_prefetch_bucket_size": 0.9 * hidden_size * hidden_size,
+                        }
+                    )
 
-        model = self._wrap_model(self.model, training=False)
-
-        if len(self.accelerator._models) == 0 and model is self.model:
-            model = (
-                self.accelerator.prepare(model)
-                if self.is_deepspeed_enabled
-                else self.accelerator.prepare_model(model, evaluation_mode=True)
-            )
-
-            if self.is_fsdp_enabled:
-                self.model = model
-
-            # for the rest of this function `model` is the outside model, whether it was wrapped or not
-            if model is not self.model:
-                self.model_wrapped = model
-
-            # backward compatibility
-            if self.is_deepspeed_enabled:
-                self.deepspeed = self.model_wrapped
-
-        # if full fp16 or bf16 eval is wanted and this ``evaluation`` or ``predict`` isn't called
-        # while ``train`` is running, cast it to the right dtype first and then put on device
-        if not self.is_in_train:
-            if args.fp16_full_eval:
-                model = model.to(dtype=torch.float16, device=args.device)
-            elif args.bf16_full_eval:
-                model = model.to(dtype=torch.bfloat16, device=args.device)
-
+        # If ZeRO-3 is used, we shard both the active and reference model.
+        # Otherwise, we assume the reference model fits in memory and is initialized on each device with ZeRO disabled (stage 0)
+        if config_kwargs["zero_optimization"]["stage"] != 3:
+            config_kwargs["zero_optimization"]["stage"] = 0
+        model, *_ = deepspeed.initialize(model=model, config=config_kwargs)
         model.eval()
+        return model
 
+    def generate(self, inputs, generation_kwargs):
+        self.tmp_model.eval()
         inputs = self._prepare_inputs(inputs)
 
         with torch.no_grad():
-            outputs = model.generate(inputs, **generation_kwargs)
+            outputs = self.tmp_model.generate(inputs, **generation_kwargs)
 
         return outputs
 

@@ -34,6 +34,7 @@ from multiprocessing import cpu_count
 from src.models.qwen.modeling_qwen import QWenForSequenceClassification
 from src.models.qwen.qwen_generation_utils import make_context
 from src.trainer import RejectSamplingTrainer
+from src.utils import prepare_deepspeed
 
 accelerator = Accelerator()
 tqdm.pandas()
@@ -602,11 +603,11 @@ def main():
         end_idx = np.min([data_size, (iteration + 1) * M])
         batch_input = instruction_dataset.select(random_idxs[iteration * M: end_idx])
 
-        model.gradient_checkpointing_disable()
-        model.config.use_cache = True
-        model.eval()
-
-
+        # model.gradient_checkpointing_disable()
+        # model.config.use_cache = True
+        # model.eval()
+        #
+        #
 
         trainer = RejectSamplingTrainer(
             model=model,
