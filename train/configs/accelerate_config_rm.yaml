@@ -1,6 +1,6 @@
 compute_environment: LOCAL_MACHINE
 deepspeed_config:
-    deepspeed_config_file: /nfs/a100-80G-17/kangyu/consistency_hallucinations/llm-playground/configs/ds_stage2_bf16.json
+    deepspeed_config_file: /nfs/a100-80G-17/kangyu/consistency_hallucinations/llm-playground/configs/ds_stage3_bf16.json
 distributed_type: DEEPSPEED
 fsdp_config: {}
 machine_rank: 0
