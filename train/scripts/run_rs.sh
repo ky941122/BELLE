@@ -49,4 +49,5 @@ accelerate launch \
     --output_dir $output_dir \
     --use_llama_model False \
     --use_rm_llama False \
-    --lr_scheduler_type "cosine"
+    --lr_scheduler_type "cosine" \
+    --main_process_port "0"
