@@ -10,7 +10,7 @@ from src.models.generation_utils import GenerationMixin
 class RejectSamplingTrainer(Trainer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.tmp_model = self._prepare_deepspeed(kwargs["model"])
+        self.tmp_model = self.model
 
     def _prepare_deepspeed(self, model):
         # Adapted from accelerate: https://github.com/huggingface/accelerate/blob/739b135f8367becb67ffaada12fe76e3aa60fefd/src/accelerate/accelerator.py#L1473
@@ -43,11 +43,16 @@ class RejectSamplingTrainer(Trainer):
         return model
 
     def generate(self, inputs, generation_kwargs):
-        self.tmp_model.eval()
+        if self.tmp_model is self.model:
+            model = self._prepare_deepspeed(self.model)
+        else:
+            model = self.tmp_model
+
+        model.eval()
         inputs = self._prepare_inputs(inputs)
 
         with torch.no_grad():
-            outputs = self.tmp_model.generate(inputs, **generation_kwargs)
+            outputs = model.generate(inputs, **generation_kwargs)
 
         return outputs
 
