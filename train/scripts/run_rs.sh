@@ -24,6 +24,7 @@ accelerate launch \
     --config_file $BELLE_PATH/train/configs/accelerate_config_rm.yaml \
     --num_processes $gpus \
     "$BELLE_PATH/train/src/entry_point/rs_train.py" \
+    --deepspeed /nfs/a100-80G-17/kangyu/consistency_hallucinations/llm-playground/configs/ds_stage3_bf16.json \
     --model_name $model_name_or_path \
     --reward_model_name $reward_model_name_or_path \
     --instruction_data $instruction_file \
