@@ -259,11 +259,11 @@ def preprocess_sft_qwen(
 def preprocess_sft_function(tokenizer, use_qwen, examples):
     if use_qwen:
         sources = []
-        for example in examples:
+        for raw_instruction, generated_response in zip(examples["raw_instruction"], examples["generated_response"]):
             sources.append(
                 [
-                    {"from": "user", "value": example['raw_instruction']},
-                    {"from": "assistant", "value": example['generated_response']},
+                    {"from": "user", "value": raw_instruction},
+                    {"from": "assistant", "value": generated_response},
                 ]
             )
         new_examples = preprocess_sft_qwen(sources, tokenizer)
@@ -322,7 +322,7 @@ def _get_batch_dataset_local(
         gen_len = output_length_sampler()
         generation_kwargs["max_new_tokens"] = gen_len
 
-        inputs = torch.tensor(input_ids, dtype=torch.long).to(training_args.device)
+        inputs = torch.tensor(input_ids, dtype=torch.long)
 
 
 
@@ -341,6 +341,8 @@ def _get_batch_dataset_local(
         for batch_input_ids in batched_inputs:
             with torch.no_grad():
                 outputs = model.generate(batch_input_ids, **generation_kwargs)
+
+            outputs = outputs.detach().cpu()
 
             batch_generated_texts = []
             for j, output_id in enumerate(outputs):

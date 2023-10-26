@@ -35,7 +35,7 @@ accelerate launch \
     --inference_batch_size_per_device 2 \
     --num_rs_iteration 20 \
     --collection_strategy "local" \
-    --rs_batch_size 32 \
+    --rs_batch_size 16 \
     --top_reward_percentage 0.2 \
     --output_min_length 128 \
     --output_max_length 1024 \
