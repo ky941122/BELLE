@@ -53,7 +53,7 @@ from huggingface_hub import Repository, create_repo, upload_folder
 from packaging import version
 from torch import nn
 from torch.utils.data import DataLoader, Dataset, RandomSampler, SequentialSampler
-
+import deepspeed
 from transformers import __version__
 from transformers.configuration_utils import PretrainedConfig
 from transformers.data.data_collator import DataCollator, DataCollatorWithPadding, default_data_collator
@@ -322,6 +322,7 @@ class RejectSamplingTrainer:
     def __init__(
         self,
         model: Union[PreTrainedModel, nn.Module] = None,
+        reward_model: Union[PreTrainedModel, nn.Module] = None,
         args: TrainingArguments = None,
         data_collator: Optional[DataCollator] = None,
         train_dataset: Optional[Dataset] = None,
@@ -364,7 +365,7 @@ class RejectSamplingTrainer:
                 self.model_init = model_init
                 model = self.call_model_init()
             else:
-                raise RuntimeError("`Trainer` requires either a `model` or `model_init` argument")
+                raise RuntimeError("`RejectSamplingTrainer` requires either a `model` or `model_init` argument")
         else:
             if model_init is not None:
                 warnings.warn(
@@ -374,6 +375,9 @@ class RejectSamplingTrainer:
                     FutureWarning,
                 )
             self.model_init = model_init
+
+        if reward_model is None:
+            raise RuntimeError("`RejectSamplingTrainer` requires a `reward_model` argument")
 
         if model.__class__.__name__ in MODEL_MAPPING_NAMES:
             raise ValueError(
@@ -523,6 +527,23 @@ class RejectSamplingTrainer:
         # later use `self.model is self.model_wrapped` to check if it's wrapped or not
         self.model_wrapped = model
         self.model = model
+
+        #################################################################################
+        self.reward_model = reward_model
+        # Safety checkers for DS integration
+        is_deepspeed_used = self.accelerator.distributed_type == "DEEPSPEED" and hasattr(
+            self.accelerator.state, "deepspeed_plugin"
+        )
+        if is_deepspeed_used:
+            # Quantized models are already set on the correct device
+            if not (
+                getattr(self.reward_model, "is_loaded_in_8bit", False)
+                or getattr(self.reward_model, "is_loaded_in_4bit", False)
+            ):
+                self.reward_model = self._prepare_deepspeed(self.reward_model)
+        else:
+            raise NotImplementedError()
+        #################################################################################
 
         self.compute_metrics = compute_metrics
         self.preprocess_logits_for_metrics = preprocess_logits_for_metrics
@@ -2241,6 +2262,7 @@ class RejectSamplingTrainer:
                 else:
                     self.tmp_model, self.optimizer = self.accelerator.prepare(self.model, self.optimizer)
             else:
+                ### usually falls here
                 # to handle cases wherein we pass "DummyScheduler" such as when it is specified in DeepSpeed config.
                 self.tmp_model, self.optimizer, self.lr_scheduler = self.accelerator.prepare(
                     self.model, self.optimizer, self.lr_scheduler
@@ -4242,3 +4264,35 @@ class RejectSamplingTrainer:
                 ds_plugin.hf_ds_config = HfTrainerDeepSpeedConfig(ds_plugin.hf_ds_config.config)
                 ds_plugin.deepspeed_config = ds_plugin.hf_ds_config.config
                 ds_plugin.hf_ds_config.trainer_config_process(self.args)
+
+    def _prepare_deepspeed(self, model):
+        # Adapted from accelerate: https://github.com/huggingface/accelerate/blob/739b135f8367becb67ffaada12fe76e3aa60fefd/src/accelerate/accelerator.py#L1473
+        deepspeed_plugin = self.accelerator.state.deepspeed_plugin
+        config_kwargs = deepspeed_plugin.deepspeed_config
+        if model is not None:
+            if hasattr(model, "config"):
+                hidden_size = (
+                    max(model.config.hidden_sizes)
+                    if getattr(model.config, "hidden_sizes", None)
+                    else getattr(model.config, "hidden_size", None)
+                )
+                if hidden_size is not None and config_kwargs["zero_optimization"]["stage"] == 3:
+                    # Note that `stage3_prefetch_bucket_size` can produce DeepSpeed messages like: `Invalidate trace cache @ step 0: expected module 1, but got module 0`
+                    # This is expected and is not an error, see: https://github.com/microsoft/DeepSpeed/discussions/4081
+                    config_kwargs.update(
+                        {
+                            "zero_optimization.reduce_bucket_size": hidden_size * hidden_size,
+                            "zero_optimization.stage3_param_persistence_threshold": 10 * hidden_size,
+                            "zero_optimization.stage3_prefetch_bucket_size": 0.9 * hidden_size * hidden_size,
+                        }
+                    )
+
+        # If ZeRO-3 is used, we shard both the active and reference model.
+        # Otherwise, we assume the reference model fits in memory and is initialized on each device with ZeRO disabled (stage 0)
+        if config_kwargs["zero_optimization"]["stage"] != 3:
+            config_kwargs["zero_optimization"]["stage"] = 0
+        model, *_ = deepspeed.initialize(model=model, config=config_kwargs)
+        model.eval()
+        return model
+
+

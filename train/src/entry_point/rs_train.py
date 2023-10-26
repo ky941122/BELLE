@@ -548,9 +548,37 @@ def main():
 
     reward_model.config.pad_token_id = rm_tokenizer.pad_token_id
 
+
+
+
+
+
+
+
+    rs_trainer = RejectSamplingTrainer(
+        model=model,
+        reward_model=reward_model,
+        args=training_args,
+        train_dataset=Dataset.from_dict({"text": [" "]}),
+        eval_dataset=Dataset.from_dict({}),
+        tokenizer=tokenizer,
+        data_collator=default_data_collator,
+        compute_metrics=None,
+        preprocess_logits_for_metrics=None,
+    )
+    rs_trainer.train(resume_from_checkpoint=False, is_first_time=True)
+
+
+
+
+
+
+
+
+
     reward_pipe = pipeline(
         "text-classification",
-        model=reward_model,
+        model=rs_trainer.reward_model,
         device=training_args.device,
         tokenizer=rm_tokenizer
     )
@@ -593,23 +621,6 @@ def main():
         "pad_token_id": tokenizer.pad_token_id,
         "temperature": 0.85,
     }
-
-
-
-
-
-    rs_trainer = RejectSamplingTrainer(
-        model=model,
-        args=training_args,
-        train_dataset=Dataset.from_dict({"text": [" "]}),
-        eval_dataset=Dataset.from_dict({}),
-        tokenizer=tokenizer,
-        data_collator=default_data_collator,
-        compute_metrics=None,
-        preprocess_logits_for_metrics=None,
-    )
-    rs_trainer.train(resume_from_checkpoint=False, is_first_time=True)
-
 
 
 
