@@ -316,7 +316,7 @@ def _get_batch_dataset_local(
     reward_eva = []
     reward_train = []
     batch_output = []
-    for i, sample in tqdm(enumerate(batch_input), total=len(batch_input)):
+    for sample in tqdm(batch_input, total=len(batch_input)):
         input_ids = [sample['input_ids'] for _ in range(K)]
 
         gen_len = output_length_sampler()
@@ -326,39 +326,62 @@ def _get_batch_dataset_local(
 
 
 
+        batched_inputs = []
+        batch_nums = len(inputs) // infer_batch_size
+        if batch_nums * infer_batch_size < len(inputs):
+            batch_nums += 1
+        for i in range(batch_nums):
+            batched_inputs.append(inputs[i * infer_batch_size : (i+1) * infer_batch_size])
 
 
-        outputs = model.generate(inputs, **generation_kwargs)
+
+
+        generated_texts = []
+        rewards = []
+        for batch_input_ids in batched_inputs:
+            with torch.no_grad():
+                outputs = model.generate(batch_input_ids, **generation_kwargs)
+
+            batch_generated_texts = []
+            for j, output_id in enumerate(outputs):
+                prompt_length = len(batch_input_ids[j])
+                tmp_generated_tensor = output_id[prompt_length:]
+                tmp_generated_text = tokenizer.decode(tmp_generated_tensor, skip_special_tokens=True)
+                batch_generated_texts.append(tmp_generated_text)
+
+            batch_generated_texts = [
+                _clean_text(text) for text in batch_generated_texts
+            ]
+
+            batch_texts_for_rewards = [sample['processed_instruction'] + text + tokenizer.eos_token for text in batch_generated_texts]
+
+            batch_rewards = strings_to_scores_fn(batch_texts_for_rewards)
+
+            # do some post-detection and discard the samples with certain criteria.
+            for kk in range(len(batch_rewards)):
+                if _discard_sample(batch_generated_texts[kk]):
+                    batch_rewards[kk] = -INF
+
+            generated_texts += batch_generated_texts
+            rewards += batch_rewards
 
 
 
 
-        generated_texts = tokenizer.batch_decode(outputs, skip_special_tokens=False)
-        assert len(input_ids) == len(generated_texts)
-
-        generated_texts = [
-            generated_text.replace(sample['processed_instruction'], '') for generated_text in generated_texts
-        ]
-        generated_texts = [
-            _clean_text(generated_text) for generated_text in generated_texts
-        ]
-        texts_for_rewards = [sample['processed_instruction'] + r for r in generated_texts]
-
-        rewards = strings_to_scores_fn(texts_for_rewards)
         assert len(input_ids) == len(generated_texts) == len(rewards)
 
         reward_eva.append(rewards[0])
 
-        # do some post-detection and discard the samples with certain criteria.
-        for kk in range(K):
-            if _discard_sample(generated_texts[kk]):
-                rewards[kk] = -INF
+
+
+
+
 
         idx_to_record = np.argmax(rewards)
         # if we discard all the samples, we do not record the sample
         if rewards[idx_to_record] != -INF:
             _sample = dict(sample)
-            _sample['generated_response'] = generated_texts[idx_to_record].replace(tokenizer.eos_token, '')
+            _sample['generated_response'] = generated_texts[idx_to_record]
             _sample['reward'] = rewards[idx_to_record]
 
             batch_output.append(_sample)
@@ -384,7 +407,7 @@ def _get_batch_dataset_local(
         gathered_train_reward.extend(all_process_train_set_reward[i])
 
     if training_args.local_rank == 0 and output_reward_path is not None:
-        with open(output_reward_path, mode='a') as fout:
+        with open(os.path.join(output_reward_path, "rewards_records.txt"), mode='a') as fout:
             fout.write('mean reward: ' + str(np.mean(gathered_reward)) + 'mean reward in training set: ' + str(
                 np.mean(gathered_train_reward)))
             fout.write("\n")
@@ -398,7 +421,7 @@ def _get_batch_dataset_local(
         plt.plot(reward_plot_seq, marker="o")
         plt.plot(train_reward_plot_seq, marker="*")
         plt.legend(["Model reward", "Reward of SFT Set"])
-        plt.savefig(training_args.output_dir + '/training_reward.png')
+        plt.savefig(os.path.join(output_reward_path, 'training_reward.png'))
         plt.close()
 
     # We store the training set for monitoring the reject sampling process
@@ -650,7 +673,7 @@ def main():
                 training_args.local_rank,
                 output_min_length=rs_args.output_min_length,
                 output_max_length=rs_args.output_max_length,
-                infer_batch_size=K,
+                infer_batch_size=rs_args.inference_batch_size_per_device,
                 generation_kwargs=generation_kwargs,
                 tokenizer=tokenizer,
                 training_args=training_args,

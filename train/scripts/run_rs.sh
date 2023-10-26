@@ -24,7 +24,6 @@ accelerate launch \
     --config_file $BELLE_PATH/train/configs/accelerate_config_rm.yaml \
     --num_processes $gpus \
     "$BELLE_PATH/train/src/entry_point/rs_train.py" \
-    --deepspeed /nfs/a100-80G-17/kangyu/consistency_hallucinations/llm-playground/configs/ds_stage3_bf16.json \
     --model_name $model_name_or_path \
     --reward_model_name $reward_model_name_or_path \
     --instruction_data $instruction_file \
@@ -33,9 +32,10 @@ accelerate launch \
     --logging_steps 1 \
     --learning_rate 1e-5 \
     --per_device_train_batch_size 2 \
+    --inference_batch_size_per_device 4 \
     --num_rs_iteration 20 \
     --collection_strategy "local" \
-    --rs_batch_size 64 \
+    --rs_batch_size 32 \
     --top_reward_percentage 0.2 \
     --output_min_length 128 \
     --output_max_length 1024 \
