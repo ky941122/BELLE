@@ -307,7 +307,7 @@ def _get_batch_dataset_local(
         generation_kwargs=None,
         tokenizer=None,
         training_args=None,
-        queries_to_scores_fn=None,
+        strings_to_scores_fn=None,
         output_reward_path=None,
         log_file=""
 ):
@@ -333,17 +333,18 @@ def _get_batch_dataset_local(
 
 
 
-        generated_texts = tokenizer.batch_decode(outputs, skip_special_tokens=True)
+        generated_texts = tokenizer.batch_decode(outputs, skip_special_tokens=False)
         assert len(input_ids) == len(generated_texts)
+
         generated_texts = [
-            generated_text.replace(sample['processed_instruction'], '') for i, generated_text in enumerate(generated_texts)
+            generated_text.replace(sample['processed_instruction'], '') for generated_text in generated_texts
         ]
         generated_texts = [
             _clean_text(generated_text) for generated_text in generated_texts
         ]
         texts_for_rewards = [sample['processed_instruction'] + r for r in generated_texts]
 
-        rewards = queries_to_scores_fn(texts_for_rewards)
+        rewards = strings_to_scores_fn(texts_for_rewards)
         assert len(input_ids) == len(generated_texts) == len(rewards)
 
         reward_eva.append(rewards[0])
@@ -357,7 +358,7 @@ def _get_batch_dataset_local(
         # if we discard all the samples, we do not record the sample
         if rewards[idx_to_record] != -INF:
             _sample = dict(sample)
-            _sample['generated_response'] = generated_texts[idx_to_record]
+            _sample['generated_response'] = generated_texts[idx_to_record].replace(tokenizer.eos_token, '')
             _sample['reward'] = rewards[idx_to_record]
 
             batch_output.append(_sample)
@@ -445,6 +446,8 @@ def main():
     elif "qwen" in rs_args.model_name.lower():
         tokenizer = AutoTokenizer.from_pretrained(rs_args.model_name, trust_remote_code=True)
         tokenizer.pad_token_id = tokenizer.eod_id
+        tokenizer.eos_token = "<|im_end|>"
+        tokenizer.eos_token_id = tokenizer.convert_tokens_to_ids(tokenizer.eos_token)
     else:
         tokenizer = AutoTokenizer.from_pretrained(rs_args.model_name)
         tokenizer.add_special_tokens({"pad_token": tokenizer.unk_token})
@@ -574,25 +577,24 @@ def main():
 
 
 
-
-
-    reward_pipe = pipeline(
-        "text-classification",
-        model=rs_trainer.reward_model,
-        device=training_args.device,
-        tokenizer=rm_tokenizer
-    )
-
     # callable that takes a list of raw text and returns a list of corresponding reward scores
     def strings_to_scores(list_of_strings):
-        pipe_kwargs = {
-            "return_all_scores": True,
-            "function_to_apply": "none",
-            "batch_size": 1
-        }
-        pipe_outputs = reward_pipe(list_of_strings, **pipe_kwargs)
-        rewards = [output[0]["score"] for output in pipe_outputs]
+        inputs = rm_tokenizer(list_of_strings, return_tensors="pt", padding=True).to(training_args.device)
+        with torch.no_grad():
+            outputs = rs_trainer.reward_model(**inputs)
+        rewards = []
+        for out in outputs.cpu().detach():
+            rewards.append(float(out[0]))
+
         return rewards
+
+
+
+
+
+
+
+
 
     # start iteration
     ITERATION = rs_args.num_rs_iteration
@@ -619,6 +621,7 @@ def main():
         "top_p": 1.0,
         "do_sample": True,
         "pad_token_id": tokenizer.pad_token_id,
+        "eos_token_id": tokenizer.eos_token_id,
         "temperature": 0.85,
     }
 
@@ -662,7 +665,7 @@ def main():
                 generation_kwargs=generation_kwargs,
                 tokenizer=tokenizer,
                 training_args=training_args,
-                queries_to_scores_fn=strings_to_scores,
+                strings_to_scores_fn=strings_to_scores,
                 output_reward_path=rs_args.output_reward_path,
                 log_file=log_file
             )
