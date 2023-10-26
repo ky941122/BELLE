@@ -2298,7 +2298,10 @@ class RejectSamplingTrainer:
 
 
 
-        print("Initialize tmp model:", self.tmp_model)
+        # print("Initialize tmp model:", self.tmp_model)
+        print("Initialize Reward Model:", self.reward_model)
+        print("Reward Model Config:", self.reward_model.config)
+        print("Reward Model Config Type:", type(self.reward_model.config))
 
         return True
         # # ckpt loading
