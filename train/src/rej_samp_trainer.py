@@ -1640,6 +1640,9 @@ class RejectSamplingTrainer:
     def _one_train(
         self, batch_size=None, args=None, resume_from_checkpoint=None, trial=None, ignore_keys_for_eval=None
     ):
+        self.state = TrainerState()
+        self.state.is_hyper_param_search = trial is not None
+
         self.accelerator.free_memory()
         self._train_batch_size = batch_size
         logger.debug(f"Currently training with a batch size of: {self._train_batch_size}")
@@ -1692,97 +1695,6 @@ class RejectSamplingTrainer:
                 f" {args.max_steps}"
             )
 
-        if DebugOption.UNDERFLOW_OVERFLOW in self.args.debug:
-            if self.args.n_gpu > 1:
-                # nn.DataParallel(model) replicates the model, creating new variables and module
-                # references registered here no longer work on other gpus, breaking the module
-                raise ValueError(
-                    "Currently --debug underflow_overflow is not supported under DP. Please use DDP"
-                    " (torch.distributed.launch)."
-                )
-            else:
-                debug_overflow = DebugUnderflowOverflow(self.model)  # noqa
-
-        delay_optimizer_creation = (
-            self.sharded_ddp is not None
-            and self.sharded_ddp != ShardedDDPOption.SIMPLE
-            or is_sagemaker_mp_enabled()
-            or self.fsdp is not None
-            or self.is_fsdp_enabled
-        )
-
-        # We need to reset the scheduler, as its parameters may be different on subsequent calls
-        if self._created_lr_scheduler:
-            self.lr_scheduler = None
-            self._created_lr_scheduler = False
-
-        if self.is_deepspeed_enabled:
-            self.optimizer, self.lr_scheduler = deepspeed_init(self, num_training_steps=max_steps)
-
-        if not delay_optimizer_creation:
-            self.create_optimizer_and_scheduler(num_training_steps=max_steps)
-
-        self.state = TrainerState()
-        self.state.is_hyper_param_search = trial is not None
-
-        # Compute absolute values for logging, eval, and save if given as ratio
-        if args.logging_steps is not None:
-            if args.logging_steps < 1:
-                self.state.logging_steps = math.ceil(max_steps * args.logging_steps)
-            else:
-                self.state.logging_steps = args.logging_steps
-        if args.eval_steps is not None:
-            if args.eval_steps < 1:
-                self.state.eval_steps = math.ceil(max_steps * args.eval_steps)
-            else:
-                self.state.eval_steps = args.eval_steps
-        if args.save_steps is not None:
-            if args.save_steps < 1:
-                self.state.save_steps = math.ceil(max_steps * args.save_steps)
-            else:
-                self.state.save_steps = args.save_steps
-
-        # Activate gradient checkpointing if needed
-        if args.gradient_checkpointing:
-            self.model.gradient_checkpointing_enable()
-
-        model = self._wrap_model(self.model_wrapped)
-
-        # as the model is wrapped, don't use `accelerator.prepare`
-        # this is for unhandled cases such as
-        # Fairscale Sharded DDP, FSDP-XLA, SageMaker MP/DP, DataParallel, IPEX
-        use_accelerator_prepare = True if model is self.model else False
-
-        if delay_optimizer_creation:
-            if use_accelerator_prepare:
-                self.model = self.accelerator.prepare(self.model)
-            self.create_optimizer_and_scheduler(num_training_steps=max_steps)
-
-        # prepare using `accelerator` prepare
-        if use_accelerator_prepare:
-            self.model.train()
-            if hasattr(self.lr_scheduler, "step"):
-                if self.use_apex:
-                    model = self.accelerator.prepare(self.model)
-                else:
-                    model, self.optimizer = self.accelerator.prepare(self.model, self.optimizer)
-            else:
-                # to handle cases wherein we pass "DummyScheduler" such as when it is specified in DeepSpeed config.
-                model, self.optimizer, self.lr_scheduler = self.accelerator.prepare(
-                    self.model, self.optimizer, self.lr_scheduler
-                )
-
-        if self.is_fsdp_enabled:
-            self.model = self.model_wrapped = model
-
-        # for the rest of this function `model` is the outside model, whether it was wrapped or not
-        if model is not self.model:
-            self.model_wrapped = model
-
-        # backward compatibility
-        if self.is_deepspeed_enabled:
-            self.deepspeed = self.model_wrapped
-
         # ckpt loading
         if resume_from_checkpoint is not None:
             if self.is_deepspeed_enabled:
@@ -1798,6 +1710,7 @@ class RejectSamplingTrainer:
         # self.model_wrapped is DDP(Transformers Model), Deepspeed(Transformers Model),
         # FSDP(Transformers Model), Dynamo Optimized Module(Transformers Model) etc.
 
+
         # Train!
         logger.info("***** Running training *****")
         logger.info(f"  Num examples = {num_examples:,}")
@@ -1808,7 +1721,7 @@ class RejectSamplingTrainer:
         logger.info(f"  Total train batch size (w. parallel, distributed & accumulation) = {total_train_batch_size:,}")
         logger.info(f"  Gradient Accumulation steps = {args.gradient_accumulation_steps}")
         logger.info(f"  Total optimization steps = {max_steps:,}")
-        logger.info(f"  Number of trainable parameters = {get_model_param_count(model, trainable_only=True):,}")
+        logger.info(f"  Number of trainable parameters = {get_model_param_count(self.tmp_model, trainable_only=True):,}")
 
         self.state.epoch = 0
         start_time = time.time()
@@ -1816,26 +1729,30 @@ class RejectSamplingTrainer:
         steps_trained_in_current_epoch = 0
         steps_trained_progress_bar = None
 
-        # Check if continuing training from a checkpoint
-        if resume_from_checkpoint is not None and os.path.isfile(
-            os.path.join(resume_from_checkpoint, TRAINER_STATE_NAME)
-        ):
-            self.state = TrainerState.load_from_json(os.path.join(resume_from_checkpoint, TRAINER_STATE_NAME))
-            epochs_trained = self.state.global_step // num_update_steps_per_epoch
-            if not args.ignore_data_skip:
-                steps_trained_in_current_epoch = self.state.global_step % (num_update_steps_per_epoch)
-                steps_trained_in_current_epoch *= args.gradient_accumulation_steps
-            else:
-                steps_trained_in_current_epoch = 0
 
-            logger.info("  Continuing training from checkpoint, will skip to saved global_step")
-            logger.info(f"  Continuing training from epoch {epochs_trained}")
-            logger.info(f"  Continuing training from global step {self.state.global_step}")
-            if not args.ignore_data_skip:
-                logger.info(
-                    f"  Will skip the first {epochs_trained} epochs then the first"
-                    f" {steps_trained_in_current_epoch} batches in the first epoch."
-                )
+
+        # # Check if continuing training from a checkpoint
+        # if resume_from_checkpoint is not None and os.path.isfile(
+        #     os.path.join(resume_from_checkpoint, TRAINER_STATE_NAME)
+        # ):
+        #     self.state = TrainerState.load_from_json(os.path.join(resume_from_checkpoint, TRAINER_STATE_NAME))
+        #     epochs_trained = self.state.global_step // num_update_steps_per_epoch
+        #     if not args.ignore_data_skip:
+        #         steps_trained_in_current_epoch = self.state.global_step % (num_update_steps_per_epoch)
+        #         steps_trained_in_current_epoch *= args.gradient_accumulation_steps
+        #     else:
+        #         steps_trained_in_current_epoch = 0
+        #
+        #     logger.info("  Continuing training from checkpoint, will skip to saved global_step")
+        #     logger.info(f"  Continuing training from epoch {epochs_trained}")
+        #     logger.info(f"  Continuing training from global step {self.state.global_step}")
+        #     if not args.ignore_data_skip:
+        #         logger.info(
+        #             f"  Will skip the first {epochs_trained} epochs then the first"
+        #             f" {steps_trained_in_current_epoch} batches in the first epoch."
+        #         )
+
+
 
         # Update the references
         self.callback_handler.model = self.model
@@ -1863,7 +1780,8 @@ class RejectSamplingTrainer:
         # _total_loss_scalar is updated everytime .item() has to be called on tr_loss and stores the sum of all losses
         self._total_loss_scalar = 0.0
         self._globalstep_last_logged = self.state.global_step
-        model.zero_grad()
+        # model.zero_grad()
+        self.tmp_model.zero_grad()
 
         self.control = self.callback_handler.on_train_begin(args, self.state, self.control)
 
@@ -1881,6 +1799,10 @@ class RejectSamplingTrainer:
                     # AT THE VERY END!
                     sampler = sampler if sampler is not None else []
                     _ = list(sampler)
+
+        #########################################
+        self.is_in_train = True
+        #########################################
 
         total_batched_samples = 0
         for epoch in range(epochs_trained, num_train_epochs):
@@ -1930,8 +1852,8 @@ class RejectSamplingTrainer:
                 if step % args.gradient_accumulation_steps == 0:
                     self.control = self.callback_handler.on_step_begin(args, self.state, self.control)
 
-                with self.accelerator.accumulate(model):
-                    tr_loss_step = self.training_step(model, inputs)
+                with self.accelerator.accumulate(self.tmp_model):
+                    tr_loss_step = self.training_step(self.tmp_model, inputs)
 
                 if (
                     args.logging_nan_inf_filter
@@ -1979,9 +1901,9 @@ class RejectSamplingTrainer:
                         elif hasattr(self.optimizer, "clip_grad_norm"):
                             # Some optimizers (like the sharded optimizer) have a specific way to do gradient clipping
                             self.optimizer.clip_grad_norm(args.max_grad_norm)
-                        elif hasattr(model, "clip_grad_norm_"):
+                        elif hasattr(self.tmp_model, "clip_grad_norm_"):
                             # Some models (like FullyShardedDDP) have a specific way to do gradient clipping
-                            model.clip_grad_norm_(args.max_grad_norm)
+                            self.tmp_model.clip_grad_norm_(args.max_grad_norm)
                         elif self.use_apex:
                             # Revert to normal clipping otherwise, handling Apex or full precision
                             nn.utils.clip_grad_norm_(
@@ -1990,7 +1912,7 @@ class RejectSamplingTrainer:
                             )
                         else:
                             self.accelerator.clip_grad_norm_(
-                                model.parameters(),
+                                self.tmp_model.parameters(),
                                 args.max_grad_norm,
                             )
 
@@ -2018,12 +1940,13 @@ class RejectSamplingTrainer:
                         if not isinstance(self.lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
                             self.lr_scheduler.step()
 
-                    model.zero_grad()
+                    # model.zero_grad()
+                    self.tmp_model.zero_grad()
                     self.state.global_step += 1
                     self.state.epoch = epoch + (step + 1 + steps_skipped) / steps_in_epoch
                     self.control = self.callback_handler.on_step_end(args, self.state, self.control)
 
-                    self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval)
+                    self._maybe_log_save_evaluate(tr_loss, self.tmp_model, trial, epoch, ignore_keys_for_eval)
                 else:
                     self.control = self.callback_handler.on_substep_end(args, self.state, self.control)
 
@@ -2038,7 +1961,7 @@ class RejectSamplingTrainer:
                 self.control.should_training_stop = True
 
             self.control = self.callback_handler.on_epoch_end(args, self.state, self.control)
-            self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval)
+            self._maybe_log_save_evaluate(tr_loss, self.tmp_model, trial, epoch, ignore_keys_for_eval)
 
             if DebugOption.TPU_METRICS_DEBUG in self.args.debug:
                 if is_torch_tpu_available():
@@ -2105,17 +2028,6 @@ class RejectSamplingTrainer:
         self._finish_current_push()
 
         return TrainOutput(self.state.global_step, train_loss, metrics)
-
-
-
-
-
-
-
-
-
-
-
 
 
     def _inner_training_loop(
@@ -2269,12 +2181,6 @@ class RejectSamplingTrainer:
         if self.is_deepspeed_enabled:
             self.deepspeed = self.model_wrapped
 
-
-
-
-
-
-
         #########################################################################################
         # Safety checkers for DS integration
         is_deepspeed_used = self.accelerator.distributed_type == "DEEPSPEED" and hasattr(
@@ -2291,17 +2197,8 @@ class RejectSamplingTrainer:
             raise NotImplementedError()
         ##########################################################################################
 
-
-
-
-
-
-
-
         # print("Initialize tmp model:", self.tmp_model)
-        print("Initialize Reward Model:", self.reward_model)
-        print("Reward Model Config:", self.reward_model.config)
-        print("Reward Model Config Type:", type(self.reward_model.config))
+        # print("Initialize Reward Model:", self.reward_model)
 
         return True
         # # ckpt loading
@@ -2318,18 +2215,6 @@ class RejectSamplingTrainer:
         # # self.model         is the Transformers Model
         # # self.model_wrapped is DDP(Transformers Model), Deepspeed(Transformers Model),
         # # FSDP(Transformers Model), Dynamo Optimized Module(Transformers Model) etc.
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

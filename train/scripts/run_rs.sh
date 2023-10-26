@@ -35,9 +35,9 @@ accelerate launch \
     --per_device_train_batch_size 2 \
     --num_rs_iteration 20 \
     --collection_strategy "local" \
-    --rs_batch_size 1024 \
-    --top_reward_percentage 0.1 \
-    --output_min_length 64 \
+    --rs_batch_size 64 \
+    --top_reward_percentage 0.2 \
+    --output_min_length 128 \
     --output_max_length 1024 \
     --output_reward_path $output_dir/reward_results/ \
     --num_train_epochs 1 \

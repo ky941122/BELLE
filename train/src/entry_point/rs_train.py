@@ -565,7 +565,9 @@ def main():
         train_dataset=Dataset.from_dict({"text": [" "]}),
         eval_dataset=Dataset.from_dict({}),
         tokenizer=tokenizer,
-        data_collator=default_data_collator,
+        data_collator=transformers.DataCollatorForSeq2Seq(
+            tokenizer, pad_to_multiple_of=8, return_tensors="pt", padding=True
+        ),
         compute_metrics=None,
         preprocess_logits_for_metrics=None,
     )
@@ -636,19 +638,6 @@ def main():
 
         model.gradient_checkpointing_disable()
         model.config.use_cache = True
-        # model.eval()
-        #
-        #
-        #
-        # trainer = RejectSamplingTrainer(
-        #     model=model,
-        #     tokenizer=tokenizer,
-        #     args=training_args,
-        #     data_collator=transformers.DataCollatorForSeq2Seq(
-        #         tokenizer, pad_to_multiple_of=8, return_tensors="pt", padding=True
-        #     ),
-        # )
-
 
 
         start_time = time.time()
@@ -720,31 +709,15 @@ def main():
         )
 
 
+        rs_trainer.train_dataset = train_dataset
 
 
 
-
-        trainer = RejectSamplingTrainer(
-            model=model,
-            tokenizer=tokenizer,
-            args=training_args,
-            train_dataset=train_dataset,
-            data_collator=transformers.DataCollatorForSeq2Seq(
-                tokenizer, pad_to_multiple_of=8, return_tensors="pt", padding=True
-            ),
-        )
-
-
-
-
-
-
-
-        trainer.train()
+        rs_trainer.train()
 
         saved_path = os.path.join(training_args.output_dir, "iteration_{}".format(iteration))
         os.makedirs(saved_path, exist_ok=True)
-        trainer.save_model(saved_path)
+        rs_trainer.save_model(saved_path)
 
         # accelerator.wait_for_everyone()
 
