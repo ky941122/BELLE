@@ -340,7 +340,7 @@ def _get_batch_dataset_local(
         rewards = []
         for batch_input_ids in batched_inputs:
             with torch.no_grad():
-                outputs = model.generate(batch_input_ids, **generation_kwargs)
+                outputs = model.generate(batch_input_ids.to(training_args.device), **generation_kwargs)
 
             outputs = outputs.detach().cpu()
 
