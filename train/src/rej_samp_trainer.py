@@ -1643,7 +1643,7 @@ class RejectSamplingTrainer:
         self.state = TrainerState()
         self.state.is_hyper_param_search = trial is not None
 
-        self.accelerator.free_memory()
+        # self.accelerator.free_memory()
         self._train_batch_size = batch_size
         logger.debug(f"Currently training with a batch size of: {self._train_batch_size}")
         # Data loader and number of training steps
