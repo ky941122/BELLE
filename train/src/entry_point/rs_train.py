@@ -583,7 +583,7 @@ def main():
         with torch.no_grad():
             outputs = rs_trainer.reward_model(**inputs)
         rewards = []
-        for out in outputs.cpu().detach():
+        for out in outputs.logits.cpu().detach():
             rewards.append(float(out[0]))
 
         return rewards
