@@ -530,19 +530,9 @@ class RejectSamplingTrainer:
 
         #################################################################################
         self.reward_model = reward_model
-        # Safety checkers for DS integration
-        is_deepspeed_used = self.accelerator.distributed_type == "DEEPSPEED" and hasattr(
-            self.accelerator.state, "deepspeed_plugin"
-        )
-        if is_deepspeed_used:
-            # Quantized models are already set on the correct device
-            if not (
-                getattr(self.reward_model, "is_loaded_in_8bit", False)
-                or getattr(self.reward_model, "is_loaded_in_4bit", False)
-            ):
-                self.reward_model = self._prepare_deepspeed(self.reward_model)
-        else:
-            raise NotImplementedError()
+
+
+
         #################################################################################
 
         self.compute_metrics = compute_metrics
@@ -2278,6 +2268,35 @@ class RejectSamplingTrainer:
         # backward compatibility
         if self.is_deepspeed_enabled:
             self.deepspeed = self.model_wrapped
+
+
+
+
+
+
+
+        #########################################################################################
+        # Safety checkers for DS integration
+        is_deepspeed_used = self.accelerator.distributed_type == "DEEPSPEED" and hasattr(
+            self.accelerator.state, "deepspeed_plugin"
+        )
+        if is_deepspeed_used:
+            # Quantized models are already set on the correct device
+            if not (
+                    getattr(self.reward_model, "is_loaded_in_8bit", False)
+                    or getattr(self.reward_model, "is_loaded_in_4bit", False)
+            ):
+                self.reward_model = self._prepare_deepspeed(self.reward_model)
+        else:
+            raise NotImplementedError()
+        ##########################################################################################
+
+
+
+
+
+
+
 
         print("Initialize tmp model:", self.tmp_model)
 
