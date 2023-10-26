@@ -32,7 +32,7 @@ accelerate launch \
     --logging_steps 1 \
     --learning_rate 1e-5 \
     --per_device_train_batch_size 2 \
-    --inference_batch_size_per_device 4 \
+    --inference_batch_size_per_device 2 \
     --num_rs_iteration 20 \
     --collection_strategy "local" \
     --rs_batch_size 32 \
