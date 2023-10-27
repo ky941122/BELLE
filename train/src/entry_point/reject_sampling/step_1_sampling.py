@@ -127,6 +127,14 @@ def main():
             lambda x: len(x["input_ids"]) <= rs_args.max_prompt_length
         )
 
+    if rs_args.debug:
+        instruction_dataset = instruction_dataset[:1000]
+
+    print_rank_0(
+        "instruction_dataset size = {}".format(len(instruction_dataset)),
+        log_file,
+    )
+
     world_size = int(os.getenv("WORLD_SIZE", "1"))
 
     print_rank_0(

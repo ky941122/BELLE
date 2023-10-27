@@ -111,5 +111,5 @@ class RejectSamplingArguments:
     version: Optional[int] = field(
         default=0, metadata={"help": "version"}
     )
-
+    debug: Optional[bool] = field(default=False, metadata={"help": "debug with toy dataset"})
 
