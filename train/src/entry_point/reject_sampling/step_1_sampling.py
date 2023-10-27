@@ -156,7 +156,7 @@ def main():
         trust_remote_code=True
     )
     model.config.pad_token_id = tokenizer.pad_token_id
-
+    model.to(accelerator.device)
     model.gradient_checkpointing_disable()
     model.config.use_cache = True
     model.eval()
