@@ -47,14 +47,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-trainer_log_levels = {
-    "detail": logging.DEBUG,  # will also print filename and line number
-    "debug": logging.DEBUG,
-    "info": logging.INFO,
-    "warning": logging.WARNING,
-    "error": logging.ERROR,
-    "critical": logging.CRITICAL,
-}
 
 INF = 888888888
 IGNORE_TOKEN_ID = LabelSmoother.ignore_index
