@@ -175,7 +175,7 @@ def main():
     shard_size = int(len(instruction_dataset) / world_size)
     if shard_size * world_size < len(instruction_dataset):
         shard_size += 1
-    shard_dataset = instruction_dataset.select( np.arange(local_rank * shard_size, (local_rank + 1) * shard_size) )
+    shard_dataset = instruction_dataset.select( np.arange( local_rank * shard_size, min((local_rank + 1) * shard_size, len(instruction_dataset)) ) )
 
     print("local_rank:", local_rank, "shard_dataset nums:", len(shard_dataset))
 
