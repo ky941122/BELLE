@@ -128,7 +128,7 @@ def main():
         )
 
     if rs_args.debug:
-        instruction_dataset = instruction_dataset[:1000]
+        instruction_dataset = instruction_dataset.select(range(1000))
 
     print_rank_0(
         "instruction_dataset size = {}".format(len(instruction_dataset)),
