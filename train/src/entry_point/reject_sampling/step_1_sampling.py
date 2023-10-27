@@ -186,7 +186,7 @@ def main():
         "do_sample": True,
         "pad_token_id": tokenizer.pad_token_id,
         "eos_token_id": tokenizer.eos_token_id,
-        "temperature": 0.85,
+        "temperature": 1.0,
     }
 
     all_output_ids = []
@@ -263,9 +263,15 @@ def main():
     all_process_data = [{}] * world_size
     dist.all_gather_object(all_process_data, output_dataset)
 
+    gathered_data = []
+    for i in range(world_size):
+        gathered_data.extend(all_process_data[i])
+
+    print_rank_0("gathered_data size: {}".format(len(gathered_data)), log_file)
+
     if local_rank == 0:
         with open(os.path.join(rs_args.output_dir, "step_1_output_iter_{}.json".format(rs_args.version)), 'w', encoding='utf8') as f:
-            json.dump(all_process_data, f, ensure_ascii=False)
+            json.dump(gathered_data, f, ensure_ascii=False)
 
     return
 

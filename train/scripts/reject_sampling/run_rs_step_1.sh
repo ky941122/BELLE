@@ -27,7 +27,7 @@ accelerate launch \
     --reward_model_name $reward_model_name_or_path \
     --instruction_data $instruction_file \
     --cache_dir $cache_dir \
-    --inference_batch_size_per_device 4 \
+    --inference_batch_size_per_device 6 \
     --max_prompt_length 1024 \
     --n_best_nums 10 \
     --output_min_length 128 \
@@ -39,4 +39,4 @@ accelerate launch \
     --output_dir $output_dir \
     --use_llama_model False \
     --use_rm_llama False \
-    --debug True
+    --debug False
