@@ -11,7 +11,7 @@ export WANDB_RESUME=...
 model_name_or_path="/nfs/10.232.64.52/nvme4/xhsun/saved_models/qwen_chat_estate_epoch1/"
 reward_model_name_or_path="/nfs/10.232.64.52/nvme3/kangyu/saved_models/qwen_chat_estate_epoch1_ultrafeedback_womargin/checkpoint-1986"
 
-output_dir="/nfs/10.232.64.52/nvme3/kangyu/saved_models/qwen_chat_estate_epoch1_RM_ultrafeedback_womargin_RS_it_data_each_1w_iter-0"
+output_dir="/nfs/10.232.64.52/nvme3/kangyu/saved_models/qwen_chat_estate_epoch1_RM_ultrafeedback_womargin_RS_it_data_each_1w_iter-1"
 mkdir -p ${output_dir}
 
 instruction_file="$BELLE_PATH/data/it_data_sample_1w_each.json"
@@ -27,7 +27,7 @@ accelerate launch \
     --reward_model_name $reward_model_name_or_path \
     --instruction_data $instruction_file \
     --cache_dir $cache_dir \
-    --inference_batch_size_per_device 6 \
+    --inference_batch_size_per_device 16 \
     --max_prompt_length 1024 \
     --n_best_nums 10 \
     --output_min_length 128 \
