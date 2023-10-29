@@ -8,10 +8,10 @@ export WANDB_PROJECT=...
 export WANDB_RUN_ID=...
 export WANDB_RESUME=...
 
-model_name_or_path="/nfs/10.232.64.52/nvme4/xhsun/saved_models/qwen_chat_estate_epoch1/"
-reward_model_name_or_path="/nfs/10.232.64.52/nvme3/kangyu/saved_models/qwen_chat_estate_epoch1_ultrafeedback_womargin/checkpoint-1986"
+model_name_or_path="$BELLE_PATH/models/qwen_chat_estate_epoch1/"
+reward_model_name_or_path="$BELLE_PATH/models/qwen_chat_estate_epoch1_ultrafeedback_womargin/checkpoint-1986"
 
-output_dir="/nfs/10.232.64.52/nvme3/kangyu/saved_models/qwen_chat_estate_epoch1_RM_ultrafeedback_womargin_RS_it_data_each_1w_iter-1"
+output_dir="$BELLE_PATH/models/qwen_chat_estate_epoch1_RM_ultrafeedback_womargin_RS_it_data_each_1w_iter-0"
 mkdir -p ${output_dir}
 
 instruction_file="$BELLE_PATH/data/it_data_sample_1w_each.json"
