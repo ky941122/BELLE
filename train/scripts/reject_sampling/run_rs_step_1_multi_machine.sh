@@ -3,11 +3,11 @@ export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
 BELLE_PATH="/nfs/a100-80G-17/kangyu/consistency_hallucinations/BELLE"
 export PYTHONPATH="$BELLE_PATH/train"
 
-WORKER_GPU = $1
-WORKER_NUM = $2
-RANK = $3
-MASTER_ADDR = $4
-MASTER_PORT = $5
+WORKER_GPU=$1
+WORKER_NUM=$2
+RANK=$3
+MASTER_ADDR=$4
+MASTER_PORT=$5
 
 model_name_or_path="/nfs/10.232.64.52/nvme4/xhsun/saved_models/qwen_chat_estate_epoch1/"
 reward_model_name_or_path="/nfs/10.232.64.52/nvme3/kangyu/saved_models/qwen_chat_estate_epoch1_ultrafeedback_womargin/checkpoint-1986"
