@@ -105,8 +105,9 @@ def main():
 
     os.makedirs(rs_args.output_dir, exist_ok=True)
 
-    log_file = os.path.join(rs_args.output_dir, "step_1_log.txt")
+    log_file = os.path.join(rs_args.output_dir, "step_2_log.txt")
     local_rank = accelerator.local_process_index
+    global_rank = accelerator.process_index
 
     # Load the tokenizer for reward model
     if rs_args.use_rm_llama:
@@ -137,25 +138,29 @@ def main():
     )
 
     with accelerator.main_process_first():
-        reward_dataset = load_dataset(
-            "json",
-            data_files=os.path.join(rs_args.output_dir, "step_1_output_iter_{}.json".format(rs_args.version)),
-            cache_dir=rs_args.cache_dir
-        )["train"]
-        reward_dataset = reward_dataset.map(
-            partial(preprocess_function, rm_tokenizer, rs_args.max_seq_length, "qwen" in rs_args.reward_model_name.lower()),
-            batched=True,
-            num_proc=max(cpu_count() // 2, 1)
-        )
-        reward_dataset = reward_dataset.filter(
-            lambda x: len(x["input_ids"]) > 0
-        )
+        reward_datasets = []
+        for i in range(4):
+            _reward_dataset = load_dataset(
+                "json",
+                data_files=os.path.join(rs_args.output_dir, "step_1_output_sub_{}.json".format(i)),
+                cache_dir=rs_args.cache_dir
+            )["train"]
+            _reward_dataset = _reward_dataset.map(
+                partial(preprocess_function, rm_tokenizer, rs_args.max_seq_length, "qwen" in rs_args.reward_model_name.lower()),
+                batched=True,
+                num_proc=max(cpu_count() // 2, 1)
+            )
+            _reward_dataset = _reward_dataset.filter(
+                lambda x: len(x["input_ids"]) > 0
+            )
 
-    if rs_args.debug:
-        reward_dataset = reward_dataset.select(range(200))
+            if rs_args.debug:
+                _reward_dataset = _reward_dataset.select(range(50))
+
+            reward_datasets.append(_reward_dataset)
 
     print_rank_0(
-        "reward_dataset size = {}".format(len(reward_dataset)),
+        "reward_dataset size = {}".format( sum([len(reward_dataset) for reward_dataset in reward_datasets]) ),
         log_file,
     )
 
@@ -202,97 +207,102 @@ def main():
     reward_model.config.use_cache = True
     reward_model.eval()
 
-    # split dataset into each rank
-    shard_size = int(len(reward_dataset) / world_size)
-    if shard_size * world_size < len(reward_dataset):
-        shard_size += 1
-    shard_dataset = reward_dataset.select( np.arange(local_rank * shard_size, (local_rank + 1) * shard_size) )
+    # split dataset into sub-dataset for robust
+    for n_sub, reward_dataset in enumerate(reward_datasets):
+        print_rank_0("*"*20 + "Start {} sub dataset".format(n_sub) + "*"*20, log_file)
+        print_rank_0("sub dataset size: {}".format(len(reward_dataset)), log_file)
 
-    print("local_rank:", local_rank, "shard_dataset nums:", len(shard_dataset))
+        # split dataset into each rank
+        shard_size = int(len(reward_dataset) / world_size)
+        if shard_size * world_size < len(reward_dataset):
+            shard_size += 1
+        shard_dataset = reward_dataset.select( np.arange( global_rank * shard_size, min((global_rank + 1) * shard_size, len(reward_dataset)) ) )
 
-    all_rewards = []
+        print("global_rank:", global_rank, "shard_dataset nums:", len(shard_dataset))
 
-    input_ids = []
-    for data in tqdm(shard_dataset, total=len(shard_dataset)):
-        # one instruction we need to get N rewards
-        N_input_ids = data['input_ids_for_rm']
+        all_rewards = []
 
-        for one_input_ids in N_input_ids:
-            input_ids.append(one_input_ids)
+        input_ids = []
+        for data in tqdm(shard_dataset, total=len(shard_dataset)):
+            # one instruction we need to get N rewards
+            N_input_ids = data['input_ids_for_rm']
 
-            if len(input_ids) % rs_args.inference_batch_size_per_device == 0:
-                inputs = rm_tokenizer.pad({
-                    "input_ids": input_ids
-                }, return_tensors='pt').to(accelerator.device)
+            for one_input_ids in N_input_ids:
+                input_ids.append(one_input_ids)
 
-                with torch.no_grad():
-                    outputs = reward_model(**inputs)
+                if len(input_ids) % rs_args.inference_batch_size_per_device == 0:
+                    inputs = rm_tokenizer.pad({
+                        "input_ids": input_ids
+                    }, return_tensors='pt').to(accelerator.device)
 
-                outputs = outputs.logits.cpu().detach()
-                rewards = []
-                for out in outputs:
-                    rewards.append(float(out[0]))
+                    with torch.no_grad():
+                        outputs = reward_model(**inputs)
 
-                all_rewards += rewards
+                    outputs = outputs.logits.cpu().detach()
+                    rewards = []
+                    for out in outputs:
+                        rewards.append(float(out[0]))
 
-                input_ids = []
+                    all_rewards += rewards
 
-    if len(input_ids) > 0:
-        inputs = rm_tokenizer.pad({
-            "input_ids": input_ids
-        }, return_tensors='pt').to(accelerator.device)
+                    input_ids = []
 
-        with torch.no_grad():
-            outputs = reward_model(**inputs)
+        if len(input_ids) > 0:
+            inputs = rm_tokenizer.pad({
+                "input_ids": input_ids
+            }, return_tensors='pt').to(accelerator.device)
 
-        outputs = outputs.logits.cpu().detach()
-        rewards = []
-        for out in outputs:
-            rewards.append(float(out[0]))
+            with torch.no_grad():
+                outputs = reward_model(**inputs)
 
-        all_rewards += rewards
+            outputs = outputs.logits.cpu().detach()
+            rewards = []
+            for out in outputs:
+                rewards.append(float(out[0]))
 
-    print("rank {} done with rewarding, we get {} rewards for {} instruction.".format(local_rank, len(all_rewards), len(shard_dataset)))
+            all_rewards += rewards
+
+        print("rank {} done with rewarding, we get {} rewards for {} instruction.".format(global_rank, len(all_rewards), len(shard_dataset)))
+
+        # do some post-process, and find the n-best
+        output_dataset = []
+        cur_index = 0
+        for data in shard_dataset:
+            generations = data["model_generated_texts"]
+            generation_nums = len(generations)
+            end_index = cur_index + generation_nums
+            rewards = all_rewards[cur_index : end_index]
+
+            new_data = dict(data)
+            idx_to_record = np.argmax(rewards)
+            new_data["rewards"] = rewards
+            new_data["best_reward"] = rewards[idx_to_record]
+            new_data["best_model_generated_text"] = generations[idx_to_record]
+
+            output_dataset.append(new_data)
+
+            cur_index = end_index
+
+        assert cur_index == len(all_rewards)
+
+        # All-gather
+        all_process_data = [{}] * world_size
+        dist.all_gather_object(all_process_data, output_dataset)
+
+        gathered_data = []
+        for i in range(world_size):
+            gathered_data.extend(all_process_data[i])
+
+        print_rank_0("gathered_data size: {}".format(len(gathered_data)), log_file)
+
+        if accelerator.is_main_process:
+            with open(os.path.join(rs_args.output_dir, "step_2_output_sub_{}.json".format(n_sub)), 'w',
+                      encoding='utf8') as f:
+                json.dump(gathered_data, f, ensure_ascii=False)
+
+    return
 
 
-
-    # do some post-process, and find the n-best
-    output_dataset = []
-    cur_index = 0
-    for data in shard_dataset:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+if __name__ == "__main__":
+    main()
 
