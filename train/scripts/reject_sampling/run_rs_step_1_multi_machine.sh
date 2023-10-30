@@ -1,12 +1,13 @@
 export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
-gpus=8
 
 BELLE_PATH="/nfs/a100-80G-17/kangyu/consistency_hallucinations/BELLE"
 export PYTHONPATH="$BELLE_PATH/train"
 
-export WANDB_PROJECT=...
-export WANDB_RUN_ID=...
-export WANDB_RESUME=...
+WORKER_GPU = $1
+WORKER_NUM = $2
+RANK = $3
+MASTER_ADDR = $4
+MASTER_PORT = $5
 
 model_name_or_path="/nfs/10.232.64.52/nvme4/xhsun/saved_models/qwen_chat_estate_epoch1/"
 reward_model_name_or_path="/nfs/10.232.64.52/nvme3/kangyu/saved_models/qwen_chat_estate_epoch1_ultrafeedback_womargin/checkpoint-1986"
@@ -20,8 +21,12 @@ cache_dir=hf_cache_dir
 mkdir -p ${cache_dir}
 
 accelerate launch \
-    --config_file $BELLE_PATH/train/configs/accelerate_config_rs.yaml \
-    --num_processes $gpus \
+    --config_file $BELLE_PATH/train/configs/accelerate_config_rs_multi_machine.yaml \
+    --num_processes $WORKER_GPU \
+    --num_machines $WORKER_NUM \
+    --machine_rank $RANK \
+    --main_process_ip $MASTER_ADDR \
+    --main_process_port $MASTER_PORT \
     "$BELLE_PATH/train/src/entry_point/reject_sampling/step_1_sampling.py" \
     --model_name $model_name_or_path \
     --reward_model_name $reward_model_name_or_path \

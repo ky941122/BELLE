@@ -127,8 +127,16 @@ def main():
             lambda x: len(x["input_ids"]) <= rs_args.max_prompt_length
         )
 
-    if rs_args.debug:
-        instruction_dataset = instruction_dataset.select(range(200))
+        if rs_args.debug:
+            instruction_dataset = instruction_dataset.select(range(200))
+
+        sub_datasets = []
+        sub_dataset_size = int(len(instruction_dataset) // 4)
+        if sub_dataset_size * 4 < len(instruction_dataset):
+            sub_dataset_size += 1
+        for i in range(4):
+            sub_dataset = instruction_dataset.select( np.arange( i * sub_dataset_size, min((i + 1) * sub_dataset_size, len(instruction_dataset)) ) )
+            sub_datasets.append(sub_dataset)
 
     print_rank_0(
         "instruction_dataset size = {}".format(len(instruction_dataset)),
@@ -171,14 +179,6 @@ def main():
 
     output_length_sampler = LengthSampler(rs_args.output_min_length, rs_args.output_max_length)
 
-    # split dataset into each rank
-    shard_size = int(len(instruction_dataset) / world_size)
-    if shard_size * world_size < len(instruction_dataset):
-        shard_size += 1
-    shard_dataset = instruction_dataset.select( np.arange( local_rank * shard_size, min((local_rank + 1) * shard_size, len(instruction_dataset)) ) )
-
-    print("local_rank:", local_rank, "shard_dataset nums:", len(shard_dataset))
-
     generation_kwargs = {
         "min_length": 1,
         "top_k": 0.0,
@@ -189,89 +189,100 @@ def main():
         "temperature": 1.0,
     }
 
-    all_output_ids = []
-    all_input_ids = []
+    # split dataset into sub-dataset for robust
+    for n_sub, sub_instruction_dataset in enumerate(sub_datasets):
+        print_rank_0("*"*20 + "Start {} sub dataset".format(n_sub) + "*"*20, log_file)
+        # split dataset into each rank
+        shard_size = int(len(sub_instruction_dataset) / world_size)
+        if shard_size * world_size < len(sub_instruction_dataset):
+            shard_size += 1
+        shard_dataset = sub_instruction_dataset.select( np.arange( local_rank * shard_size, min((local_rank + 1) * shard_size, len(sub_instruction_dataset)) ) )
 
-    input_ids = []
-    for data in tqdm(shard_dataset, total=len(shard_dataset)):
-        # one instruction we need to sample N times
-        N_input_ids = [data['input_ids'] for _ in range(rs_args.n_best_nums)]
+        print("local_rank:", local_rank, "shard_dataset nums:", len(shard_dataset))
 
-        for one_input_ids in N_input_ids:
-            input_ids.append(one_input_ids)
+        all_output_ids = []
+        all_input_ids = []
 
-            if len(input_ids) % rs_args.inference_batch_size_per_device == 0:
-                gen_len = output_length_sampler()
-                generation_kwargs["max_new_tokens"] = gen_len
+        input_ids = []
+        for data in tqdm(shard_dataset, total=len(shard_dataset)):
+            # one instruction we need to sample N times
+            N_input_ids = [data['input_ids'] for _ in range(rs_args.n_best_nums)]
 
-                inputs = tokenizer.pad({
-                    "input_ids": input_ids
-                }, return_tensors='pt').to(accelerator.device)
+            for one_input_ids in N_input_ids:
+                input_ids.append(one_input_ids)
 
-                with torch.no_grad():
-                    outputs = model.generate(**inputs, **generation_kwargs)
+                if len(input_ids) % rs_args.inference_batch_size_per_device == 0:
+                    gen_len = output_length_sampler()
+                    generation_kwargs["max_new_tokens"] = gen_len
 
-                outputs = outputs.detach().cpu().numpy().tolist()
-                inputs = inputs['input_ids'].detach().cpu().numpy().tolist()
+                    inputs = tokenizer.pad({
+                        "input_ids": input_ids
+                    }, return_tensors='pt').to(accelerator.device)
 
-                all_output_ids += outputs
-                all_input_ids += inputs
+                    with torch.no_grad():
+                        outputs = model.generate(**inputs, **generation_kwargs)
 
-                input_ids = []
+                    outputs = outputs.detach().cpu().numpy().tolist()
+                    inputs = inputs['input_ids'].detach().cpu().numpy().tolist()
 
-    if len(input_ids) > 0:
-        gen_len = output_length_sampler()
-        generation_kwargs["max_new_tokens"] = gen_len
+                    all_output_ids += outputs
+                    all_input_ids += inputs
 
-        inputs = tokenizer.pad({
-            "input_ids": input_ids
-        }, return_tensors='pt').to(accelerator.device)
+                    input_ids = []
 
-        with torch.no_grad():
-            outputs = model.generate(**inputs, **generation_kwargs)
+        if len(input_ids) > 0:
+            gen_len = output_length_sampler()
+            generation_kwargs["max_new_tokens"] = gen_len
 
-        outputs = outputs.detach().cpu().numpy().tolist()
-        inputs = inputs['input_ids'].detach().cpu().numpy().tolist()
+            inputs = tokenizer.pad({
+                "input_ids": input_ids
+            }, return_tensors='pt').to(accelerator.device)
 
-        all_output_ids += outputs
-        all_input_ids += inputs
+            with torch.no_grad():
+                outputs = model.generate(**inputs, **generation_kwargs)
 
-    print("rank {} done with sampling, we get {} outputs for {} instruction.".format(local_rank, len(all_output_ids), len(shard_dataset)))
+            outputs = outputs.detach().cpu().numpy().tolist()
+            inputs = inputs['input_ids'].detach().cpu().numpy().tolist()
 
-    assert len(all_output_ids) == len(all_input_ids) == len(shard_dataset) * rs_args.n_best_nums
+            all_output_ids += outputs
+            all_input_ids += inputs
 
-    # do some post-process
-    output_dataset = []
-    for i, data in enumerate(shard_dataset):
-        n_sample_input_ids = all_input_ids[i * rs_args.n_best_nums : (i+1) * rs_args.n_best_nums]
-        n_sample_output_ids = all_output_ids[i * rs_args.n_best_nums: (i + 1) * rs_args.n_best_nums]
+        print("rank {} done with sampling, we get {} outputs for {} instruction.".format(local_rank, len(all_output_ids), len(shard_dataset)))
 
-        new_data = dict(data)
-        generated_texts = []
-        for j in range(len(n_sample_input_ids)):
-            assert data['input_ids'] == n_sample_input_ids[j][-len(data['input_ids']):]
-            prompt_length = len(n_sample_input_ids[j])
-            generated_ids = n_sample_output_ids[j][prompt_length:]
-            generated_text = tokenizer.decode(generated_ids, skip_special_tokens=True)
-            generated_texts.append(generated_text)
+        assert len(all_output_ids) == len(all_input_ids) == len(shard_dataset) * rs_args.n_best_nums
 
-        new_data['model_generated_texts'] = generated_texts
+        # do some post-process
+        output_dataset = []
+        for i, data in enumerate(shard_dataset):
+            n_sample_input_ids = all_input_ids[i * rs_args.n_best_nums : (i+1) * rs_args.n_best_nums]
+            n_sample_output_ids = all_output_ids[i * rs_args.n_best_nums: (i + 1) * rs_args.n_best_nums]
 
-        output_dataset.append(new_data)
+            new_data = dict(data)
+            generated_texts = []
+            for j in range(len(n_sample_input_ids)):
+                assert data['input_ids'] == n_sample_input_ids[j][-len(data['input_ids']):]
+                prompt_length = len(n_sample_input_ids[j])
+                generated_ids = n_sample_output_ids[j][prompt_length:]
+                generated_text = tokenizer.decode(generated_ids, skip_special_tokens=True)
+                generated_texts.append(generated_text)
 
-    # All-gather
-    all_process_data = [{}] * world_size
-    dist.all_gather_object(all_process_data, output_dataset)
+            new_data['model_generated_texts'] = generated_texts
 
-    gathered_data = []
-    for i in range(world_size):
-        gathered_data.extend(all_process_data[i])
+            output_dataset.append(new_data)
 
-    print_rank_0("gathered_data size: {}".format(len(gathered_data)), log_file)
+        # All-gather
+        all_process_data = [{}] * world_size
+        dist.all_gather_object(all_process_data, output_dataset)
 
-    if local_rank == 0:
-        with open(os.path.join(rs_args.output_dir, "step_1_output_iter_{}.json".format(rs_args.version)), 'w', encoding='utf8') as f:
-            json.dump(gathered_data, f, ensure_ascii=False)
+        gathered_data = []
+        for i in range(world_size):
+            gathered_data.extend(all_process_data[i])
+
+        print_rank_0("gathered_data size: {}".format(len(gathered_data)), log_file)
+
+        if local_rank == 0:
+            with open(os.path.join(rs_args.output_dir, "step_1_output_sub_{}.json".format(n_sub)), 'w', encoding='utf8') as f:
+                json.dump(gathered_data, f, ensure_ascii=False)
 
     return
 
