@@ -2,9 +2,11 @@
 import os
 import sys
 import json
+from datetime import timedelta
 from functools import partial
 
 from accelerate import Accelerator
+from accelerate import InitProcessGroupKwargs
 import torch
 import torch.distributed as dist
 from transformers import (
@@ -24,7 +26,8 @@ from multiprocessing import cpu_count
 from src.entry_point.reject_sampling.configs import RejectSamplingArguments
 from src.models.qwen.qwen_generation_utils import make_context
 
-accelerator = Accelerator()
+kwargs_handler = InitProcessGroupKwargs(timeout=timedelta(seconds=36000))  # increase NCCL timeout to 10 hours
+accelerator = Accelerator(kwargs_handlers=[kwargs_handler])
 tqdm.pandas()
 
 # Setup logging
@@ -272,6 +275,10 @@ def main():
             new_data['model_generated_texts'] = generated_texts
 
             output_dataset.append(new_data)
+
+        #####################################################
+        accelerator.wait_for_everyone()
+        #####################################################
 
         # All-gather
         all_process_data = [{}] * world_size
