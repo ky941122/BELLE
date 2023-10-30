@@ -83,6 +83,7 @@ def main():
 
     log_file = os.path.join(rs_args.output_dir, "step_1_log.txt")
     local_rank = accelerator.local_process_index
+    global_rank = accelerator.process_index
 
     # Load the tokenizer for model under training
     if rs_args.use_llama_model:
@@ -192,13 +193,15 @@ def main():
     # split dataset into sub-dataset for robust
     for n_sub, sub_instruction_dataset in enumerate(sub_datasets):
         print_rank_0("*"*20 + "Start {} sub dataset".format(n_sub) + "*"*20, log_file)
+        print_rank_0("sub dataset size: {}".format(len(sub_instruction_dataset)), log_file)
+
         # split dataset into each rank
         shard_size = int(len(sub_instruction_dataset) / world_size)
         if shard_size * world_size < len(sub_instruction_dataset):
             shard_size += 1
-        shard_dataset = sub_instruction_dataset.select( np.arange( local_rank * shard_size, min((local_rank + 1) * shard_size, len(sub_instruction_dataset)) ) )
+        shard_dataset = sub_instruction_dataset.select( np.arange( global_rank * shard_size, min((global_rank + 1) * shard_size, len(sub_instruction_dataset)) ) )
 
-        print("local_rank:", local_rank, "shard_dataset nums:", len(shard_dataset))
+        print("global_rank:", global_rank, "shard_dataset nums:", len(shard_dataset))
 
         all_output_ids = []
         all_input_ids = []
@@ -247,7 +250,7 @@ def main():
             all_output_ids += outputs
             all_input_ids += inputs
 
-        print("rank {} done with sampling, we get {} outputs for {} instruction.".format(local_rank, len(all_output_ids), len(shard_dataset)))
+        print("rank {} done with sampling, we get {} outputs for {} instruction.".format(global_rank, len(all_output_ids), len(shard_dataset)))
 
         assert len(all_output_ids) == len(all_input_ids) == len(shard_dataset) * rs_args.n_best_nums
 
@@ -280,7 +283,7 @@ def main():
 
         print_rank_0("gathered_data size: {}".format(len(gathered_data)), log_file)
 
-        if local_rank == 0:
+        if accelerator.is_main_process:
             with open(os.path.join(rs_args.output_dir, "step_1_output_sub_{}.json".format(n_sub)), 'w', encoding='utf8') as f:
                 json.dump(gathered_data, f, ensure_ascii=False)
 
