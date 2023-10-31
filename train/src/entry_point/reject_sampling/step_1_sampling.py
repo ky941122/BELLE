@@ -195,6 +195,10 @@ def main():
 
     # split dataset into sub-dataset for robust
     for n_sub, sub_instruction_dataset in enumerate(sub_datasets):
+
+        if n_sub < rs_args.start_n_sub:
+            continue
+
         print_rank_0("*"*20 + "Start {} sub dataset".format(n_sub) + "*"*20, log_file)
         print_rank_0("sub dataset size: {}".format(len(sub_instruction_dataset)), log_file)
 

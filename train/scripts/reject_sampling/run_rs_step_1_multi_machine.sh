@@ -44,4 +44,5 @@ accelerate launch \
     --output_dir $output_dir \
     --use_llama_model False \
     --use_rm_llama False \
+    --start_n_sub 2 \
     --debug False
