@@ -4,9 +4,10 @@ from functools import partial
 import math
 import os
 import sys
+from datetime import timedelta
 from typing import Any, Dict, Optional
 
-from accelerate import Accelerator
+from accelerate import Accelerator, InitProcessGroupKwargs
 from datasets import load_dataset
 from peft import LoraConfig, get_peft_model
 from tqdm import tqdm
@@ -28,7 +29,10 @@ from multiprocessing import cpu_count
 from src.models.qwen.modeling_qwen import QWenForSequenceClassification
 
 tqdm.pandas()
-accelerator = Accelerator()
+
+kwargs_handler = InitProcessGroupKwargs(timeout=timedelta(seconds=36000))  # increase NCCL timeout to 10 hours
+accelerator = Accelerator(kwargs_handlers=[kwargs_handler])
+
 # Setup logging
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",

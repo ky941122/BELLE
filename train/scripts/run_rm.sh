@@ -8,12 +8,12 @@ export WANDB_PROJECT=...
 export WANDB_RUN_ID=...
 export WANDB_RESUME=...
 
-model_name_or_path="/nfs/10.232.64.52/nvme4/xhsun/saved_models/qwen_chat_estate_epoch1/"
-output_dir="/nfs/10.232.64.52/nvme3/kangyu/saved_models/qwen_chat_estate_epoch1_ultrafeedback_womargin"
+model_name_or_path="/nfs/10.232.64.52/nvme2/xhsun/saved_models/chatmodel-ft-roleinjection_qwen"
+output_dir="/nfs/10.232.64.52/nvme3/kangyu/saved_models/chatmodel-ft-roleinjection_qwen_translated_ultra_shp_no-margin"
 mkdir -p ${output_dir}
 
-train_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/BELLE/data/UltraFeedback_QWenFormat_WithoutMargin.json
-validation_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/BELLE/data/UltraFeedback_QWenFormat_WithoutMargin.json
+train_file=$BELLE_PATH/data/translated_preference_data_ultra_shp_by_gpt35.json
+validation_file=$BELLE_PATH/data/translated_preference_data_ultra_shp_by_gpt35.json
 cache_dir=hf_cache_dir
 mkdir -p ${cache_dir}
 cutoff_len=2048
