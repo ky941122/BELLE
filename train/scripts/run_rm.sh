@@ -16,7 +16,7 @@ train_file=$BELLE_PATH/data/translated_preference_data_ultra_shp_by_gpt35.json
 validation_file=$BELLE_PATH/data/translated_preference_data_ultra_shp_by_gpt35.json
 cache_dir=hf_cache_dir
 mkdir -p ${cache_dir}
-cutoff_len=1024
+cutoff_len=640
 
 accelerate launch \
     --config_file $BELLE_PATH/train/configs/accelerate_config_rm.yaml \
