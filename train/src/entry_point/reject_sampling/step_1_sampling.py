@@ -215,15 +215,14 @@ def main():
 
         input_ids = []
         for data in tqdm(shard_dataset, total=len(shard_dataset)):
-            # one instruction we need to sample N times
-            N_input_ids = [data['input_ids'] for _ in range(rs_args.n_best_nums)]
-
-            for one_input_ids in N_input_ids:
-                input_ids.append(one_input_ids)
-
-                if len(input_ids) % rs_args.inference_batch_size_per_device == 0:
+            input_ids.append(data['input_ids'])
+            if len(input_ids) % rs_args.inference_batch_size_per_device == 0:
+                # one instruction we need to sample N times
+                for _ in range(rs_args.n_best_nums):
                     gen_len = output_length_sampler()
+                    gen_temperature = np.random.uniform(rs_args.generate_min_temperature, rs_args.generate_max_temperature)
                     generation_kwargs["max_new_tokens"] = gen_len
+                    generation_kwargs["temperature"] = gen_temperature
 
                     inputs = tokenizer.pad({
                         "input_ids": input_ids
@@ -240,45 +239,73 @@ def main():
 
                     input_ids = []
 
+        # the rest samples
         if len(input_ids) > 0:
-            gen_len = output_length_sampler()
-            generation_kwargs["max_new_tokens"] = gen_len
+            # one instruction we need to sample N times
+            for _ in range(rs_args.n_best_nums):
+                gen_len = output_length_sampler()
+                gen_temperature = np.random.uniform(rs_args.generate_min_temperature, rs_args.generate_max_temperature)
+                generation_kwargs["max_new_tokens"] = gen_len
+                generation_kwargs["temperature"] = gen_temperature
 
-            inputs = tokenizer.pad({
-                "input_ids": input_ids
-            }, return_tensors='pt').to(accelerator.device)
+                inputs = tokenizer.pad({
+                    "input_ids": input_ids
+                }, return_tensors='pt').to(accelerator.device)
 
-            with torch.no_grad():
-                outputs = model.generate(**inputs, **generation_kwargs)
+                with torch.no_grad():
+                    outputs = model.generate(**inputs, **generation_kwargs)
 
-            outputs = outputs.detach().cpu().numpy().tolist()
-            inputs = inputs['input_ids'].detach().cpu().numpy().tolist()
+                outputs = outputs.detach().cpu().numpy().tolist()
+                inputs = inputs['input_ids'].detach().cpu().numpy().tolist()
 
-            all_output_ids += outputs
-            all_input_ids += inputs
+                all_output_ids += outputs
+                all_input_ids += inputs
 
         print("rank {} done with sampling, we get {} outputs for {} instruction.".format(global_rank, len(all_output_ids), len(shard_dataset)))
 
         assert len(all_output_ids) == len(all_input_ids) == len(shard_dataset) * rs_args.n_best_nums
 
         # do some post-process
+        batch_nums = int(len(shard_dataset) / rs_args.inference_batch_size_per_device)
+        if batch_nums * rs_args.inference_batch_size_per_device < len(shard_dataset):
+            batch_nums += 1
+
+        cur_index = 0
         output_dataset = []
-        for i, data in enumerate(shard_dataset):
-            n_sample_input_ids = all_input_ids[i * rs_args.n_best_nums : (i+1) * rs_args.n_best_nums]
-            n_sample_output_ids = all_output_ids[i * rs_args.n_best_nums: (i + 1) * rs_args.n_best_nums]
+        for i in range(batch_nums):
+            batch = shard_dataset.select(
+                np.arange(
+                    i * rs_args.inference_batch_size_per_device,
+                    min(len(shard_dataset), (i + 1) * rs_args.inference_batch_size_per_device)
+                )
+            )
 
-            new_data = dict(data)
-            generated_texts = []
-            for j in range(len(n_sample_input_ids)):
-                assert data['input_ids'] == n_sample_input_ids[j][-len(data['input_ids']):]
-                prompt_length = len(n_sample_input_ids[j])
-                generated_ids = n_sample_output_ids[j][prompt_length:]
-                generated_text = tokenizer.decode(generated_ids, skip_special_tokens=True)
-                generated_texts.append(generated_text)
+            real_batch_size = len(batch)
+            end_index = cur_index + real_batch_size * rs_args.n_best_nums
 
-            new_data['model_generated_texts'] = generated_texts
+            n_sample_input_ids = all_input_ids[cur_index : end_index]
+            n_sample_output_ids = all_output_ids[cur_index : end_index]
 
-            output_dataset.append(new_data)
+            for j, data in enumerate(batch):
+                new_data = dict(data)
+                generated_texts = []
+                for k in range(rs_args.n_best_nums):
+                    one_sample_input_ids = n_sample_input_ids[j + k * real_batch_size]
+                    one_sample_output_ids = n_sample_output_ids[j + k * real_batch_size]
+
+                    assert data['input_ids'] == one_sample_input_ids[-len(data['input_ids']):]
+                    prompt_length = len(one_sample_input_ids)
+                    generated_ids = one_sample_output_ids[prompt_length:]
+                    generated_text = tokenizer.decode(generated_ids, skip_special_tokens=True)
+                    generated_texts.append(generated_text)
+
+                new_data['model_generated_texts'] = generated_texts
+
+                output_dataset.append(new_data)
+
+            cur_index = end_index
+
+        assert cur_index == len(all_input_ids) == len(all_output_ids)
 
         #####################################################
         accelerator.wait_for_everyone()

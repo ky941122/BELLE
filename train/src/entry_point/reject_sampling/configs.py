@@ -35,6 +35,22 @@ class RejectSamplingArguments:
             ),
         },
     )
+    generate_min_temperature: Optional[float] = field(
+        default=1.0,
+        metadata={
+            "help": (
+                "generate_min_temperature"
+            ),
+        },
+    )
+    generate_max_temperature: Optional[float] = field(
+        default=1.5,
+        metadata={
+            "help": (
+                "generate_max_temperature"
+            ),
+        },
+    )
     num_rs_iteration: Optional[int] = field(
         default=20,
         metadata={
