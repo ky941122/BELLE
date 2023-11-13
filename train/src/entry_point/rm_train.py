@@ -340,7 +340,7 @@ def main():
         resume_from_checkpoint=script_args.resume_from_checkpoint,
         save_total_limit=script_args.save_total_limit,
         load_best_model_at_end=True,
-        ddp_timeout=3600,
+        ddp_timeout=36000,
         seed=script_args.seed,
         dataloader_drop_last=script_args.dataloader_drop_last,
     )
