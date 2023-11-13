@@ -214,7 +214,7 @@ def main():
     parser = HfArgumentParser(ScriptArguments)
     script_args = parser.parse_args_into_dataclasses()[0]
     log_file = os.path.join(script_args.output_dir, "print_log.txt")
-    local_rank = accelerator.local_process_index
+    local_rank = accelerator.process_index
 
     # Load the dataset and pre-process it
     if script_args.use_llama:
