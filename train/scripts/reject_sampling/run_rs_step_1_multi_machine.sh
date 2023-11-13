@@ -9,13 +9,13 @@ RANK=$3
 MASTER_ADDR=$4
 MASTER_PORT=$5
 
-model_name_or_path="/nfs/10.232.64.52/nvme4/xhsun/saved_models/qwen_chat_estate_epoch1/"
-reward_model_name_or_path="/nfs/10.232.64.52/nvme3/kangyu/saved_models/qwen_chat_estate_epoch1_ultrafeedback_womargin/checkpoint-1986"
+model_name_or_path="/nfs/10.232.64.52/nvme2/xhsun/saved_models/chatmodel-ft-roleinjection_qwen"
+reward_model_name_or_path=""
 
-output_dir="/nfs/10.232.64.52/nvme3/kangyu/saved_models/qwen_chat_estate_epoch1_RM_ultrafeedback_womargin_RS_it_data_each_1w_iter-0"
+output_dir="/nfs/10.232.64.52/nvme3/kangyu/saved_models/chatmodel-ft-roleinjection_qwen_RM_ultra_shp_no-margin_RS_jiazhuang_1w_20231113"
 mkdir -p ${output_dir}
 
-instruction_file="$BELLE_PATH/data/it_data_sample_1w_each.json"
+instruction_file="$BELLE_PATH/data/jiazhuang_gen_by_gpt35_20231113.json"
 
 cache_dir=hf_cache_dir
 mkdir -p ${cache_dir}
@@ -44,5 +44,5 @@ accelerate launch \
     --output_dir $output_dir \
     --use_llama_model False \
     --use_rm_llama False \
-    --start_n_sub 3 \
+    --start_n_sub 0 \
     --debug False
