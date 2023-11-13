@@ -12,9 +12,9 @@ MASTER_PORT=$5
 KE_ROOT_PATH="$BELLE_PATH/saved_models"
 ALI_ROOT_PATH="/nfs/10.232.64.52/nvme3/kangyu/saved_models"
 
-model_name_or_path="/nfs/a100-80G-18/xunxianghui/gitrepositories/Chathome-14B-roleSFT/chatmodel-ft-roleinjection_qwen"
+model_name_or_path="/nfs/10.232.64.52/nvme2/xhsun/saved_models/chatmodel-ft-roleinjection_qwen"
 
-output_dir="$KE_ROOT_PATH/chatmodel-ft-roleinjection_qwen_translated_ultra_shp_no-margin_multi-machine"
+output_dir="$ALI_ROOT_PATH/chatmodel-ft-roleinjection_qwen_translated_ultra_shp_no-margin_multi-machine"
 mkdir -p ${output_dir}
 
 train_file=$BELLE_PATH/data/translated_preference_data_ultra_shp_by_gpt35.json
