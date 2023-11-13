@@ -292,6 +292,7 @@ def main():
         * script_args.gradient_accumulation_steps
         * script_args.per_device_train_batch_size
     )
+    print_rank_0("global_batch_size = {}".format(global_batch_size), log_file)
     if script_args.dataloader_drop_last:
         num_steps = (
             math.floor(training_nums / global_batch_size) * script_args.num_train_epochs
