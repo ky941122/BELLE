@@ -157,6 +157,7 @@ class ScriptArguments:
     seq_length: Optional[int] = field(
         default=512, metadata={"help": "Input sequence length"}
     )
+    debug: Optional[bool] = field(default=False, metadata={"help": "debug with toy dataset"})
 
 
 def preprocess_qwen(tokenizer, source, system_message = "You are a helpful assistant."):
@@ -251,6 +252,10 @@ def main():
         eval_dataset = load_dataset(
             "json", data_files=script_args.eval_data, cache_dir=script_args.cache_dir
         )["train"]
+
+        if script_args.debug:
+            train_dataset = train_dataset.select(range(200))
+            eval_dataset = eval_dataset.select(range(200))
 
         # Preprocess the dataset and filter out examples that are longer than script_args.max_length
         train_dataset = train_dataset.map(

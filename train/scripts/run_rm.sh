@@ -8,8 +8,8 @@ export WANDB_PROJECT=...
 export WANDB_RUN_ID=...
 export WANDB_RESUME=...
 
-model_name_or_path="/nfs/10.232.64.52/nvme2/xhsun/saved_models/chatmodel-ft-roleinjection_qwen"
-output_dir="/nfs/10.232.64.52/nvme3/kangyu/saved_models/chatmodel-ft-roleinjection_qwen_translated_ultra_shp_no-margin"
+model_name_or_path="/nfs/a100-80G-18/xunxianghui/gitrepositories/Chathome-14B-roleSFT/chatmodel-ft-roleinjection_qwen"
+output_dir="$BELLE_PATH/saved_models/chatmodel-ft-roleinjection_qwen_translated_ultra_shp_no-margin"
 mkdir -p ${output_dir}
 
 train_file=$BELLE_PATH/data/translated_preference_data_ultra_shp_by_gpt35.json
@@ -41,4 +41,5 @@ accelerate launch \
     --trust_remote_code True \
     --output_dir $output_dir \
     --use_llama False \
+    --debug True \
     --lr_scheduler_type "cosine"
