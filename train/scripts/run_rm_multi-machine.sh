@@ -9,10 +9,11 @@ RANK=$3
 MASTER_ADDR=$4
 MASTER_PORT=$5
 
-KE_ROOT_PATH = "/nfs/a100-80G-17/kangyu/consistency_hallucinations/BELLE/saved_models"
-ALI_ROOT_PATH = "/nfs/10.232.64.52/nvme3/kangyu/saved_models"
+KE_ROOT_PATH="$BELLE_PATH/saved_models"
+ALI_ROOT_PATH="/nfs/10.232.64.52/nvme3/kangyu/saved_models"
 
 model_name_or_path="/nfs/a100-80G-18/xunxianghui/gitrepositories/Chathome-14B-roleSFT/chatmodel-ft-roleinjection_qwen"
+
 output_dir="$KE_ROOT_PATH/chatmodel-ft-roleinjection_qwen_translated_ultra_shp_no-margin_multi-machine"
 mkdir -p ${output_dir}
 
