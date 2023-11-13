@@ -237,7 +237,7 @@ def main():
                     all_output_ids += outputs
                     all_input_ids += inputs
 
-                    input_ids = []
+                input_ids = []
 
         # the rest samples
         if len(input_ids) > 0:
