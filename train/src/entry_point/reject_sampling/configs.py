@@ -130,12 +130,6 @@ class RejectSamplingArguments:
     start_n_sub: Optional[int] = field(
         default=0, metadata={"help": "start_n_sub"}
     )
-
-
-
-
-
-
     report_to: Optional[str] = field(
         default=None, metadata={"help": "use 'wandb' to log with wandb"}
     )
@@ -211,11 +205,5 @@ class RejectSamplingArguments:
         default=42,
         metadata={"help": "Random seed that will be set at the beginning of training."},
     )
-
-
-
-
-
-
     debug: Optional[bool] = field(default=False, metadata={"help": "debug with toy dataset"})
 
