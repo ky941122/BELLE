@@ -206,4 +206,3 @@ class RejectSamplingArguments:
         metadata={"help": "Random seed that will be set at the beginning of training."},
     )
     debug: Optional[bool] = field(default=False, metadata={"help": "debug with toy dataset"})
-
