@@ -12,7 +12,7 @@ MASTER_PORT=$5
 model_name_or_path="/nfs/10.232.64.52/nvme2/xhsun/saved_models/chatmodel-ft-roleinjection_qwen"
 reward_model_name_or_path="..."
 
-output_dir="/nfs/10.232.64.52/nvme3/kangyu/saved_models/chatmodel-ft-roleinjection_qwen_RM_ultra_shp_no-margin_RS_jiazhuang_1w_20231113_C-RLFT_detailed"
+output_dir="/nfs/10.232.64.52/nvme3/kangyu/saved_models/chatmodel-ft-roleinjection_qwen_RM_ultra_shp_no-margin_RS_jiazhuang_1w_20231113_C-RLFT_short"
 mkdir -p ${output_dir}
 
 instruction_file="$BELLE_PATH/data/jiazhuang_gen_by_gpt35_20231113.json"
@@ -27,7 +27,7 @@ accelerate launch \
     --machine_rank $RANK \
     --main_process_ip $MASTER_ADDR \
     --main_process_port $MASTER_PORT \
-    "$BELLE_PATH/train/src/entry_point/reject_sampling/step_1_sampling_C-RLFT_detailed.py" \
+    "$BELLE_PATH/train/src/entry_point/reject_sampling/step_1_sampling_C-RLFT_short.py" \
     --model_name $model_name_or_path \
     --reward_model_name $reward_model_name_or_path \
     --instruction_data $instruction_file \
