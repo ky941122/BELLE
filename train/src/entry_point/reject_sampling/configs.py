@@ -130,5 +130,92 @@ class RejectSamplingArguments:
     start_n_sub: Optional[int] = field(
         default=0, metadata={"help": "start_n_sub"}
     )
+
+
+
+
+
+
+    report_to: Optional[str] = field(
+        default=None, metadata={"help": "use 'wandb' to log with wandb"}
+    )
+    logging_steps: Optional[int] = field(
+        default=500, metadata={"help": "the number of update steps between two logs"}
+    )
+    gradient_accumulation_steps: Optional[int] = field(
+        default=8, metadata={"help": "the number of gradient accumulation steps"}
+    )
+    gradient_checkpointing: Optional[bool] = field(
+        default=True, metadata={"help": "Enable gradient checkpointing"}
+    )
+    per_device_train_batch_size: Optional[int] = field(
+        default=1, metadata={"help": "the training batch size on each device"}
+    )
+    per_device_eval_batch_size: Optional[int] = field(
+        default=1, metadata={"help": "evaluating batch size"}
+    )
+    dataloader_drop_last: Optional[bool] = field(
+        default=False,
+        metadata={
+            "help": "Drop the last incomplete batch if it is not divisible by the batch size."
+        },
+    )
+    num_train_epochs: Optional[int] = field(
+        default=1, metadata={"help": "the number of training epochs"}
+    )
+    warmup_steps: int = field(
+        default=100, metadata={"help": "Linear warmup over warmup_steps."}
+    )
+    learning_rate: Optional[float] = field(
+        default=1.41e-5, metadata={"help": "the learning rate"}
+    )
+    bf16: Optional[bool] = field(default=True, metadata={"help": "bfloat16"})
+    fp16: Optional[bool] = field(default=False, metadata={"help": "float16"})
+    weight_decay: float = field(
+        default=0.001, metadata={"help": "Weight decay for AdamW if we apply some."}
+    )
+    lr_scheduler_type: Optional[str] = field(
+        default="linear",
+        metadata={"help": "The lr scheduler"},
+    )
+    overwrite_output_dir: bool = field(
+        default=False,
+        metadata={
+            "help": (
+                "Overwrite the content of the output directory. "
+                "Use this to continue training if output_dir points to a checkpoint directory."
+            )
+        },
+    )
+    resume_from_checkpoint: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "The path to a folder with a valid checkpoint for your model."
+        },
+    )
+    save_total_limit: Optional[int] = field(
+        default=3,
+        metadata={
+            "help": (
+                "If a value is passed, will limit the total amount of checkpoints. Deletes the older checkpoints in"
+                " `output_dir`. When `load_best_model_at_end` is enabled, the 'best' checkpoint according to"
+                " `metric_for_best_model` will always be retained in addition to the most recent ones. For example,"
+                " for `save_total_limit=5` and `load_best_model_at_end=True`, the four last checkpoints will always be"
+                " retained alongside the best model. When `save_total_limit=1` and `load_best_model_at_end=True`,"
+                " it is possible that two checkpoints are saved: the last one and the best one (if they are different)."
+                " Default is unlimited checkpoints"
+            )
+        },
+    )
+    seed: int = field(
+        default=42,
+        metadata={"help": "Random seed that will be set at the beginning of training."},
+    )
+
+
+
+
+
+
     debug: Optional[bool] = field(default=False, metadata={"help": "debug with toy dataset"})
 
