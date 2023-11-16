@@ -37,7 +37,7 @@ accelerate launch \
     --gradient_accumulation_steps 8 \
     --gradient_checkpointing True \
     --num_train_epochs 1 \
-    --warmup_steps 50 \
+    --warmup_steps 20 \
     --learning_rate 1e-5 \
     --lr_scheduler_type "cosine" \
     --per_device_train_batch_size 2 \
