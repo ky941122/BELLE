@@ -12,7 +12,7 @@ MASTER_PORT=$5
 model_name_or_path="/nfs/10.232.64.52/nvme2/xhsun/saved_models/chatmodel-ft-roleinjection_qwen"
 reward_model_name_or_path="..."
 
-output_dir="$BELLE_PATH/saved_models/chatmodel-ft-roleinjection_qwen_RM_ultra_shp_no-margin_RS_jiazhuang_1w_20231113"
+output_dir="/nfs/10.232.64.52/nvme3/kangyu/saved_models/chatmodel-ft-roleinjection_qwen_RM_ultra_shp_no-margin_RS_jiazhuang_1w_20231113"
 mkdir -p ${output_dir}
 
 instruction_file="..."
