@@ -241,7 +241,7 @@ def main():
         overwrite_output_dir=rs_args.overwrite_output_dir,
         resume_from_checkpoint=rs_args.resume_from_checkpoint,
         save_total_limit=rs_args.save_total_limit,
-        load_best_model_at_end=True,
+        # load_best_model_at_end=True,
         ddp_timeout=36000,
         seed=rs_args.seed,
         dataloader_drop_last=rs_args.dataloader_drop_last,
