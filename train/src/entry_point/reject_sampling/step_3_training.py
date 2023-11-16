@@ -177,11 +177,15 @@ def main():
         train_dataset = train_dataset.map(
             partial(preprocess_sft_function, tokenizer, "qwen" in rs_args.model_name.lower()),
             batched=True,
-            num_proc=max(cpu_count() // 2, 1)
+            num_proc=max(cpu_count() // 2, 1),
+            remove_columns=["raw_instruction", "generated_response"],
         )
         train_dataset = train_dataset.filter(
             lambda x: len(x["input_ids"]) <= rs_args.max_seq_length
         )
+
+    for i in range(2):
+        print_rank_0("Train tokenized example: {}".format(train_dataset[i]), log_file)
 
     # Define the training arguments
     training_nums = len(train_dataset)
