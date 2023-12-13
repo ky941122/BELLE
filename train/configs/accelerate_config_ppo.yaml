@@ -1,6 +1,6 @@
 compute_environment: LOCAL_MACHINE
 deepspeed_config:
-    deepspeed_config_file: configs/deepspeed_config_ppo.json
+    deepspeed_config_file: /nfs/a100-80G-17/kangyu/consistency_hallucinations/BELLE/train/configs/deepspeed_config_ppo.json
 distributed_type: DEEPSPEED
 fsdp_config: {}
 machine_rank: 0
