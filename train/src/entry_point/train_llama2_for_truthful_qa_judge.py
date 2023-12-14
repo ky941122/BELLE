@@ -80,6 +80,9 @@ class MyArguments:
     logging_steps: Optional[int] = field(
         default=500, metadata={"help": "the number of update steps between two logs"}
     )
+    save_steps: Optional[int] = field(
+        default=100, metadata={"help": "the number of steps between two saving"}
+    )
     gradient_accumulation_steps: Optional[int] = field(
         default=8, metadata={"help": "the number of gradient accumulation steps"}
     )
@@ -275,7 +278,7 @@ def main():
         weight_decay=my_args.weight_decay,
         lr_scheduler_type=my_args.lr_scheduler_type,
         # eval_steps=eval_steps,
-        save_steps=eval_steps,
+        save_steps=my_args.save_steps,
         warmup_steps=my_args.warmup_steps,
         overwrite_output_dir=my_args.overwrite_output_dir,
         resume_from_checkpoint=my_args.resume_from_checkpoint,
