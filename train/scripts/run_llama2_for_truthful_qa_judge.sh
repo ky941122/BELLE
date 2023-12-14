@@ -9,10 +9,10 @@ export WANDB_RUN_ID=...
 export WANDB_RESUME=...
 
 model_name_or_path="$BELLE_PATH/saved_models/Llama-2-7b-chat-hf"
-output_dir="/nfs/10.232.64.3/nvme3/kangyu/saved_models/Llama-2-7b-chat_truthful_qa_truth"
+output_dir="/nfs/10.232.64.3/nvme3/kangyu/saved_models/Llama-2-7b-chat_truthful_qa_info"
 mkdir -p ${output_dir}
 
-train_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/data/truthful_qa_judge/finetune_truth.jsonl
+train_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/data/truthful_qa_judge/finetune_info.jsonl
 
 cache_dir=hf_cache_dir
 mkdir -p ${cache_dir}
