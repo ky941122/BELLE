@@ -6,6 +6,7 @@ from transformers import (
     AutoTokenizer,
     HfArgumentParser,
     LlamaTokenizer,
+    LlamaForCausalLM,
     TrainingArguments,
     set_seed,
 )
@@ -29,7 +30,7 @@ from src.sample_generator import (
     batch_grouped_sft_generate,
     generate_and_tokenize_prompt,
 )
-from src.models.llama.modeling_llama import LlamaForCausalLM
+# from src.models.llama.modeling_llama import LlamaForCausalLM
 
 if version.parse(transformers.__version__) <= version.parse("4.30.2"):
     from src.trainer import MyTrainer as Trainer

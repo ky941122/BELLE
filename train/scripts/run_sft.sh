@@ -3,18 +3,21 @@ export CUDA_VISIBLE_DEVICES='0,1,2,3,4,5,6,7'
 export WANDB_PROJECT=...
 export WANDB_RUN_ID=...
 export WANDB_RESUME=allow
-export ABS_PATH=...
-export PYTHONPATH="$ABS_PATH/BELLE/train"
-model_name_or_path=/path_to_llm/hf_llama_7b/ # or bloomz-7b1-mt
+export ABS_PATH="/nfs/a100-80G-17/kangyu/consistency_hallucinations"
+export BELLE_PATH="$ABS_PATH/BELLE"
+export PYTHONPATH="$BELLE_PATH/train"
 
-train_file=belleMath.json
-validation_file=belleMath-dev1K.json
-output_dir="$ABS_PATH/BELLE/saved_models/${WANDB_PROJECT}_${WANDB_RUN_ID}"
+model_name_or_path=$BELLE_PATH/saved_models/Llama-2-7b-chat-hf
+
+train_file=$ABS_PATH/trytry/implicit_cot/data/gsm8k/train_cot_train.json
+validation_file=$ABS_PATH/trytry/implicit_cot/data/gsm8k/train_cot_test.json
+
+output_dir="$BELLE_PATH/saved_models/implicit_cot_lora_llama2-7b"
 mkdir -p ${output_dir}
 
 cache_dir=hf_cache_dir
 mkdir -p ${cache_dir}
-cutoff_len=1024
+cutoff_len=2048
 
 #FT
 # torchrun --nproc_per_node 8 src/entry_point/sft_train.py \
@@ -83,29 +86,29 @@ cutoff_len=1024
 torchrun --nproc_per_node 8 src/entry_point/sft_train.py \
     --ddp_timeout 36000 \
     --model_name_or_path ${model_name_or_path} \
-    --llama \
-    --use_lora \
+    --llama True \
+    --use_lora True \
     --deepspeed configs/deepspeed_config_stage3.json \
     --lora_config configs/lora_config_llama.json \
     --train_file ${train_file} \
     --validation_file ${validation_file} \
-    --per_device_train_batch_size 1 \
-    --per_device_eval_batch_size 1 \
-    --gradient_accumulation_steps 1 \
-    --num_train_epochs 10 \
+    --per_device_train_batch_size 2 \
+    --per_device_eval_batch_size 2 \
+    --gradient_accumulation_steps 8 \
+    --num_train_epochs 2 \
     --model_max_length ${cutoff_len} \
     --save_strategy "steps" \
     --save_total_limit 3 \
-    --learning_rate 3e-4 \
+    --learning_rate 8e-6 \
     --weight_decay 0.00001 \
     --warmup_ratio 0.01 \
     --lr_scheduler_type "cosine" \
-    --logging_steps 10 \
+    --logging_steps 1 \
     --evaluation_strategy "steps" \
     --torch_dtype "bfloat16" \
     --bf16 \
-    --seed 1234 \
-    --gradient_checkpointing \
+    --seed 42 \
+    --gradient_checkpointing True \
     --cache_dir ${cache_dir} \
     --output_dir ${output_dir} \
    # --use_flash_attention
