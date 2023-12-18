@@ -95,13 +95,13 @@ torchrun --nproc_per_node 8 $BELLE_PATH/train/src/entry_point/sft_train.py \
     --per_device_train_batch_size 2 \
     --per_device_eval_batch_size 2 \
     --gradient_accumulation_steps 8 \
-    --num_train_epochs 2 \
+    --num_train_epochs 8 \
     --model_max_length ${cutoff_len} \
     --save_strategy "steps" \
     --save_total_limit 3 \
-    --learning_rate 8e-6 \
+    --learning_rate 2e-4 \
     --weight_decay 0.00001 \
-    --warmup_ratio 0.01 \
+    --warmup_ratio 0.001 \
     --lr_scheduler_type "cosine" \
     --logging_steps 1 \
     --evaluation_strategy "steps" \
