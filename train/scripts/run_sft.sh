@@ -83,13 +83,13 @@ cutoff_len=2048
 #    # --resume_from_checkpoint ...
 
 # LoRA without 8bit
-torchrun --nproc_per_node 8 src/entry_point/sft_train.py \
+torchrun --nproc_per_node 8 $BELLE_PATH/train/src/entry_point/sft_train.py \
     --ddp_timeout 36000 \
     --model_name_or_path ${model_name_or_path} \
     --llama True \
     --use_lora True \
-    --deepspeed configs/deepspeed_config_stage3.json \
-    --lora_config configs/lora_config_llama.json \
+    --deepspeed $BELLE_PATH/train/configs/deepspeed_config_stage3.json \
+    --lora_config $BELLE_PATH/train/configs/lora_config_llama.json \
     --train_file ${train_file} \
     --validation_file ${validation_file} \
     --per_device_train_batch_size 2 \
