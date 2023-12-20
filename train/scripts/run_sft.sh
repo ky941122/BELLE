@@ -98,10 +98,10 @@ torchrun --nproc_per_node 8 $BELLE_PATH/train/src/entry_point/sft_train.py \
     --num_train_epochs 8 \
     --model_max_length ${cutoff_len} \
     --save_strategy "steps" \
-    --save_total_limit 3 \
-    --learning_rate 2e-4 \
+    --save_total_limit 100 \
+    --learning_rate 2e-5 \
     --weight_decay 0.00001 \
-    --warmup_ratio 0.001 \
+    --warmup_ratio 0.01 \
     --lr_scheduler_type "cosine" \
     --logging_steps 1 \
     --evaluation_strategy "steps" \
