@@ -12,7 +12,7 @@ model_name_or_path=$BELLE_PATH/saved_models/Llama-2-7b-chat-hf
 train_file=$ABS_PATH/trytry/implicit_cot/data/gsm8k/train_cot_train.json
 validation_file=$ABS_PATH/trytry/implicit_cot/data/gsm8k/train_cot_test.json
 
-output_dir="$BELLE_PATH/saved_models/implicit_cot_lora_llama2-7b"
+output_dir="$BELLE_PATH/saved_models/implicit_cot_lora_llama2-7b_1e-4"
 mkdir -p ${output_dir}
 
 cache_dir=hf_cache_dir
@@ -99,7 +99,7 @@ torchrun --nproc_per_node 8 $BELLE_PATH/train/src/entry_point/sft_train.py \
     --model_max_length ${cutoff_len} \
     --save_strategy "steps" \
     --save_total_limit 100 \
-    --learning_rate 2e-5 \
+    --learning_rate 2e-4 \
     --weight_decay 0.00001 \
     --warmup_ratio 0.01 \
     --lr_scheduler_type "cosine" \
