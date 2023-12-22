@@ -162,13 +162,20 @@ def preprocess_sft_function(tokenizer, examples):
         "labels": [],
         "attention_mask": []
     }
+
+    START_COT_ID = 32000
+    END_COT_ID = 32001
+
     for question, cot, final_answer in zip(examples["question"], examples["cot"], examples["final_answer"]):
         instruction = "[INST] " + question + " [/INST]"
 
-
         instruct_id = tokenizer.encode(instruction, add_special_tokens=False)
-
         cot_id = tokenizer.encode(cot, add_special_tokens=False)
+        input_cot_id = [START_COT_ID] * len(cot_id)
+        cot_id = cot_id + [END_COT_ID]
+        input_cot_id = input_cot_id + [END_COT_ID]
+        answer_id = tokenizer.encode(final_answer, add_special_tokens=False)
+
 
 
 

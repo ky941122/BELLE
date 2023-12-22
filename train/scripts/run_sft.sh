@@ -12,7 +12,7 @@ model_name_or_path=$BELLE_PATH/saved_models/implicit-cot_cot-lora_llama2-13b_2e-
 train_file=$ABS_PATH/trytry/implicit_cot/data/gsm8k/train_answer_train.json
 validation_file=$ABS_PATH/trytry/implicit_cot/data/gsm8k/train_answer_test.json
 
-output_dir="/nfs/a100-80G-16/kangyu/saved_models/final_answer_model"
+output_dir="/nfs/10.232.64.3/nvme3/kangyu/saved_models/final_answer_model"
 mkdir -p ${output_dir}
 
 cache_dir=hf_cache_dir
