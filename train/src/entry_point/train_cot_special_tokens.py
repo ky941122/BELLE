@@ -60,6 +60,9 @@ class MyArguments:
     model_name: Optional[str] = field(
         default="Qwen/Qwen-14B-Chat", metadata={"help": "the name of model under training."}
     )
+    tokenizer_name: Optional[str] = field(
+        default="Qwen/Qwen-14B-Chat", metadata={"help": "the name of tokenizer under training."}
+    )
     train_data: str = field(default="", metadata={"help": "train data path"})
     eval_data: str = field(default="", metadata={"help": "eval data path"})
     cache_dir: str = field(default="", metadata={"help": "cache dir"})
@@ -81,9 +84,9 @@ class MyArguments:
     logging_steps: Optional[int] = field(
         default=500, metadata={"help": "the number of update steps between two logs"}
     )
-    save_steps: Optional[int] = field(
-        default=100, metadata={"help": "the number of steps between two saving"}
-    )
+    # save_steps: Optional[int] = field(
+    #     default=100, metadata={"help": "the number of steps between two saving"}
+    # )
     gradient_accumulation_steps: Optional[int] = field(
         default=8, metadata={"help": "the number of gradient accumulation steps"}
     )
@@ -176,20 +179,12 @@ def preprocess_sft_function(tokenizer, examples):
         input_cot_id = input_cot_id + [END_COT_ID]
         answer_id = tokenizer.encode(final_answer, add_special_tokens=False)
 
+        input_id = instruct_id + input_cot_id + answer_id
+        label = [IGNORE_TOKEN_ID]*len(instruct_id) + cot_id + answer_id
 
-
-
-
-
-
-        input_id = tokenizer.encode(text, add_special_tokens=False)
-        assert input_id[-1] in (
-            4874,  # yes
-            694    # no
-        )
-        target = input_id[-1]
         input_id = [tokenizer.bos_token_id] + input_id + [tokenizer.eos_token_id]
-        label = [tokenizer.bos_token_id] + [IGNORE_TOKEN_ID]*(len(input_id)-3) + [target] + [tokenizer.eos_token_id]
+        label = [tokenizer.bos_token_id] + label + [tokenizer.eos_token_id]
+
         assert len(input_id) == len(label)
 
         new_examples["input_ids"].append(input_id)
@@ -239,9 +234,22 @@ def main():
             partial(preprocess_sft_function, tokenizer),
             batched=True,
             num_proc=max(cpu_count() // 2, 1),
-            remove_columns=["prompt", "completion"],
+            remove_columns=["question", "cot", "final_answer"],
         )
         train_dataset = train_dataset.filter(
+            lambda x: len(x["input_ids"]) <= my_args.max_seq_length
+        )
+
+        eval_dataset = load_dataset(
+            "json", data_files=my_args.eval_data, cache_dir=my_args.cache_dir
+        )["train"]
+        eval_dataset = eval_dataset.map(
+            partial(preprocess_sft_function, tokenizer),
+            batched=True,
+            num_proc=max(cpu_count() // 2, 1),
+            remove_columns=["question", "cot", "final_answer"],
+        )
+        eval_dataset = eval_dataset.filter(
             lambda x: len(x["input_ids"]) <= my_args.max_seq_length
         )
 
@@ -290,19 +298,19 @@ def main():
         remove_unused_columns=False,
         optim="adamw_torch",
         logging_steps=my_args.logging_steps,
-        # evaluation_strategy="steps",
+        evaluation_strategy="steps",
         save_strategy="steps",
         bf16=my_args.bf16,
         fp16=my_args.fp16,
         weight_decay=my_args.weight_decay,
         lr_scheduler_type=my_args.lr_scheduler_type,
-        # eval_steps=eval_steps,
-        save_steps=my_args.save_steps,
+        eval_steps=eval_steps,
+        save_steps=eval_steps,
         warmup_steps=my_args.warmup_steps,
         overwrite_output_dir=my_args.overwrite_output_dir,
         resume_from_checkpoint=my_args.resume_from_checkpoint,
         save_total_limit=my_args.save_total_limit,
-        # load_best_model_at_end=True,
+        load_best_model_at_end=True,
         ddp_timeout=36000,
         seed=my_args.seed,
         dataloader_drop_last=my_args.dataloader_drop_last,
@@ -345,7 +353,8 @@ def main():
         model=model,
         args=training_args,
         train_dataset=train_dataset,
-        eval_dataset=None,
+        eval_dataset=eval_dataset,
+        # eval_dataset=None,
         tokenizer=tokenizer,
         data_collator=data_collator
     )
