@@ -205,7 +205,7 @@ def main():
     global_rank = accelerator.process_index
 
     # Load the tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(my_args.model_name, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(my_args.tokenizer_name, trust_remote_code=True)
     tokenizer.add_special_tokens(
         {
             "bos_token": "<s>",
