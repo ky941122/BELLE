@@ -5,7 +5,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from tqdm import tqdm
 
 model_dir = "/nfs/10.232.64.3/nvme3/kangyu/saved_models/final_answer_model/checkpoint-70"
-tokenizer = AutoTokenizer.from_pretrained("./BELLE/saved_models/implicit-cot_cot-lora_llama2-13b_2e-4/checkpoint-168/merged/", trust_remote_code=True)
+tokenizer = AutoTokenizer.from_pretrained("/nfs/a100-80G-17/kangyu/consistency_hallucinations/BELLE/saved_models/implicit-cot_cot-lora_llama2-13b_2e-4/checkpoint-168/merged/", trust_remote_code=True)
 tokenizer.add_special_tokens({'bos_token': '<s>', 'eos_token': '</s>', 'unk_token': '<unk>', 'pad_token': '<unk>'})
 model = AutoModelForCausalLM.from_pretrained(model_dir, device_map="cuda", trust_remote_code=True).eval()
 
