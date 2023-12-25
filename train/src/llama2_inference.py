@@ -12,7 +12,7 @@ model = AutoModelForCausalLM.from_pretrained(model_dir, device_map="cuda", trust
 prompt = "Human: \n" + "{}" + "\n\nAssistant: \n"
 
 def model_call(text, eos_token_ids):
-    inputs = tokenizer([text], padding=True, return_tensors='pt')
+    inputs = tokenizer([text], padding=True, return_tensors='pt').to("cuda")
     outputs = model.generate(**inputs, eos_token_id=eos_token_ids, do_sample=False)
     output = outputs[0]
     output = output[len(inputs['input_ids'][0]):]
