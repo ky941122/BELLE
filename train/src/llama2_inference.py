@@ -1,5 +1,5 @@
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = "3"
+os.environ['CUDA_VISIBLE_DEVICES'] = "4"
 import json
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -14,7 +14,7 @@ belle_prompt = "Human: \n" + "{}" + "\n\nAssistant: \n"
 
 START_COT_ID_0 = 32000
 END_COT_ID = 32256
-COT_LEN = 80
+COT_LEN = 128
 instruction = "[INST] " + "{}" + " [/INST]"
 
 def model_call(eos_token_ids, inputs=None, text=None):
