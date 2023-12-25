@@ -159,22 +159,25 @@ class MyArguments:
     debug: Optional[bool] = field(default=False, metadata={"help": "debug with toy dataset"})
 
 
-def preprocess_sft_function(tokenizer, examples):
+def preprocess_sft_function(tokenizer, max_cot_length, examples):
     new_examples = {
         "input_ids": [],
         "labels": [],
         "attention_mask": []
     }
 
-    START_COT_ID = 32000
-    END_COT_ID = 32001
+    START_COT_ID_0 = 32000
+    END_COT_ID = 32256
 
     for question, cot, final_answer in zip(examples["question"], examples["cot"], examples["final_answer"]):
         instruction = "[INST] " + question + " [/INST]"
 
         instruct_id = tokenizer.encode(instruction, add_special_tokens=False)
         cot_id = tokenizer.encode(cot, add_special_tokens=False)
-        input_cot_id = [START_COT_ID] * len(cot_id)
+        cot_id = cot_id[:max_cot_length]
+        input_cot_id = []
+        for i in range(len(cot_id)):
+            input_cot_id.append(START_COT_ID_0 + i)
         cot_id = cot_id + [END_COT_ID]
         input_cot_id = input_cot_id + [END_COT_ID]
         answer_id = tokenizer.encode(final_answer, add_special_tokens=False)
@@ -231,7 +234,7 @@ def main():
             "json", data_files=my_args.train_data, cache_dir=my_args.cache_dir
         )["train"]
         train_dataset = train_dataset.map(
-            partial(preprocess_sft_function, tokenizer),
+            partial(preprocess_sft_function, tokenizer, 256),
             batched=True,
             num_proc=max(cpu_count() // 2, 1),
             remove_columns=["question", "cot", "final_answer"],
@@ -244,7 +247,7 @@ def main():
             "json", data_files=my_args.eval_data, cache_dir=my_args.cache_dir
         )["train"]
         eval_dataset = eval_dataset.map(
-            partial(preprocess_sft_function, tokenizer),
+            partial(preprocess_sft_function, tokenizer, 256),
             batched=True,
             num_proc=max(cpu_count() // 2, 1),
             remove_columns=["question", "cot", "final_answer"],

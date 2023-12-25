@@ -8,10 +8,10 @@ export WANDB_PROJECT=...
 export WANDB_RUN_ID=...
 export WANDB_RESUME=...
 
-model_name_or_path="/nfs/a100-80G-16/kangyu/saved_models/Llama-2-13b-chat_add-2-cot-tokens"
-tokenizer_name_or_path="/nfs/a100-80G-16/kangyu/saved_models/tokenizer_Llama-2-13b-chat_add-2-cot-tokens"
+model_name_or_path="/nfs/a100-80G-16/kangyu/saved_models/Llama-2-13b-chat_add-257-cot-tokens"
+tokenizer_name_or_path="/nfs/a100-80G-16/kangyu/saved_models/tokenizer_Llama-2-13b-chat_add-257-cot-tokens"
 
-output_dir="/nfs/10.232.64.3/nvme2/kangyu/saved_models/Llama-2-13b-single-cot-token"
+output_dir="/nfs/a100-80G-15/kangyu/saved_models/Llama-2-13b-257-cot-tokens"
 mkdir -p ${output_dir}
 
 train_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/implicit_cot/data/gsm8k/train_cot-special-tokens_train.json
@@ -34,10 +34,10 @@ accelerate launch \
     --report_to "tensorboard" \
     --logging_steps 1 \
     --save_total_limit 5 \
-    --learning_rate 8e-6 \
+    --learning_rate 2e-5 \
     --per_device_train_batch_size 2 \
     --per_device_eval_batch_size 2 \
-    --num_train_epochs 2 \
+    --num_train_epochs 8 \
     --max_seq_length $cutoff_len \
     --gradient_accumulation_steps 8 \
     --gradient_checkpointing True \
