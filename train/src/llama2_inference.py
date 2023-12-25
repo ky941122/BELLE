@@ -60,4 +60,3 @@ with open(os.path.join(dst_dir, "257-cot-tokens_first-round_COT_LEN-{}.json".for
 
 print("Done!")
 
-
