@@ -4,7 +4,7 @@ gpus=8
 BELLE_PATH="/nfs/a100-80G-17/kangyu/consistency_hallucinations/BELLE"
 export PYTHONPATH="$BELLE_PATH/train"
 
-model_name_or_path="/nfs/a100-80G-15/xytian/myProjects/AI_NLP_GM/pretrained_models/Llama-2-13b-chat-hf"
+model_name_or_path="/nfs/172.17.3.40/nvme1/a100-test-1node-torchimg-idc/bella/xhsun/llama2-models/Llama-2-13b-chat-hf"
 
 output_dir="$BELLE_PATH/results/ppl_from_raw_model"
 mkdir -p ${output_dir}
@@ -24,4 +24,4 @@ accelerate launch \
     --cache_dir $cache_dir \
     --debug False \
     --start_n_sub 0 \
-    --inference_batch_size_per_device 16
+    --inference_batch_size_per_device 10
