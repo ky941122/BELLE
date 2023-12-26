@@ -244,6 +244,9 @@ def main():
                                 best_i = index
                                 best_loss = cur_loss
 
+                        input_ids = []
+                        indexs = []
+
                 # 没有需要摘掉的token了
                 if best_delta_loss >= 0:
                     break
