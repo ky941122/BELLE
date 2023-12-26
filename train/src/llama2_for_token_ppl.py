@@ -7,10 +7,6 @@ from typing import List, Optional, Tuple, Union
 from transformers.modeling_outputs import CausalLMOutputWithPast
 
 
-
-
-
-
 class LlamaForCausalLM(LlamaPreTrainedModel):
     _tied_weights_keys = ["lm_head.weight"]
 
@@ -171,5 +167,4 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
                 tuple(past_state.index_select(0, beam_idx.to(past_state.device)) for past_state in layer_past),
             )
         return reordered_past
-
 
