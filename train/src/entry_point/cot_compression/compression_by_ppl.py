@@ -11,18 +11,13 @@ from accelerate import InitProcessGroupKwargs
 import torch
 import torch.distributed as dist
 from transformers import (
-    AutoTokenizer,
-    AutoModelForCausalLM,
-    BitsAndBytesConfig,
     HfArgumentParser,
     LlamaTokenizer
 )
-from trl.core import LengthSampler
 from datasets import load_dataset
 import numpy as np
 from tqdm import tqdm
 import logging
-from multiprocessing import cpu_count
 
 from src.llama2_for_token_ppl import LlamaForCausalLM
 
