@@ -24,4 +24,4 @@ accelerate launch \
     --cache_dir $cache_dir \
     --debug False \
     --start_n_sub 0 \
-    --inference_batch_size_per_device 10
+    --inference_batch_size_per_device 6
