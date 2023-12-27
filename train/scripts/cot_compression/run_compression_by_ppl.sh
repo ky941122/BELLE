@@ -34,3 +34,4 @@ accelerate launch \
     --debug False \
     --start_n_sub 0 \
     --inference_batch_size_per_device 10
+
