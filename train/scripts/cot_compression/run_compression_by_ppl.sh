@@ -11,7 +11,7 @@ MASTER_PORT=$5
 
 model_name_or_path="/nfs/a100-80G-15/xytian/myProjects/AI_NLP_GM/pretrained_models/Llama-2-13b-chat-hf"
 
-output_dir="$BELLE_PATH/results/debug_ppl_from_raw_model"
+output_dir="$BELLE_PATH/results/KE_ppl_from_raw_model"
 mkdir -p ${output_dir}
 
 train_file="/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/implicit_cot/data/gsm8k/train_cot-special-tokens_train.json"
