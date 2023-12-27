@@ -175,7 +175,14 @@ def main():
             cot_id = tokenizer.encode(cot, add_special_tokens=False)
             answer_id = tokenizer.encode(answer, add_special_tokens=False)
 
-            assert answer_id[:5] == [450, 1234, 338, 29901, 29871]
+            answer_prefix_length = 5
+            if answer_id[:5] == [450, 1234, 338, 29901, 29871]:
+                answer_prefix_length = 5
+            elif answer_id[:4] == [450, 1234, 338, 29901]:
+                print(answer)
+                answer_prefix_length = 4
+            else:
+                raise ValueError(answer)
 
             input_id = [tokenizer.bos_token_id] + instruction_id + cot_id + answer_id + [tokenizer.eos_token_id]
             input_ids = torch.tensor([input_id]).to(accelerator.device)
@@ -189,7 +196,7 @@ def main():
             assert len(answer_loss) == len(answer_id)
 
             # 通用前缀部分也不包括进去
-            answer_loss = answer_loss[5:]
+            answer_loss = answer_loss[answer_prefix_length:]
             pivot_loss = sum(answer_loss) / len(answer_loss)
 
             # 开始摘token
@@ -234,7 +241,7 @@ def main():
                             assert len(answer_loss) == len(answer_id)
 
                             # 通用前缀部分也不包括进去
-                            answer_loss = answer_loss[5:]
+                            answer_loss = answer_loss[answer_prefix_length:]
                             cur_loss = sum(answer_loss) / len(answer_loss)
 
                             delta_loss = cur_loss - pivot_loss  # 越小越好，loss降越多越好。

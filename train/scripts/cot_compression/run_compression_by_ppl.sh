@@ -23,5 +23,5 @@ accelerate launch \
     --train_data $train_file \
     --cache_dir $cache_dir \
     --debug False \
-    --start_n_sub 0 \
+    --start_n_sub 3 \
     --inference_batch_size_per_device 10
