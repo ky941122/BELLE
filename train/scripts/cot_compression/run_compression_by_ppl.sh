@@ -31,6 +31,6 @@ accelerate launch \
     --model_name $model_name_or_path \
     --train_data $train_file \
     --cache_dir $cache_dir \
-    --debug True \
+    --debug False \
     --start_n_sub 0 \
     --inference_batch_size_per_device 10
