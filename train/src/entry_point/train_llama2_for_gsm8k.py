@@ -225,7 +225,7 @@ def main():
             partial(preprocess_sft_function, tokenizer, 256),
             batched=True,
             num_proc=max(cpu_count() // 2, 1),
-            remove_columns=["question", "cot", "final_answer"],
+            remove_columns=["question", "cot", "new_cot", "final_answer"],
         )
         train_dataset = train_dataset.filter(
             lambda x: len(x["input_ids"]) <= my_args.max_seq_length
@@ -238,7 +238,7 @@ def main():
             partial(preprocess_sft_function, tokenizer, 256),
             batched=True,
             num_proc=max(cpu_count() // 2, 1),
-            remove_columns=["question", "cot", "final_answer"],
+            remove_columns=["question", "cot", "new_cot", "final_answer"],
         )
         eval_dataset = eval_dataset.filter(
             lambda x: len(x["input_ids"]) <= my_args.max_seq_length
