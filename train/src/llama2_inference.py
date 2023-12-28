@@ -5,9 +5,11 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from tqdm import tqdm
 
-model_dir = "/nfs/a100-80G-15/kangyu/saved_models/Llama-2-13b-257-cot-tokens/checkpoint-168/"
+model_dir = "/nfs/172.17.1.38/nvme4/kangyu/saved_models/Llama-2-13b_new-cot_2000-samples"
+
 tokenizer = AutoTokenizer.from_pretrained(model_dir, trust_remote_code=True)
 tokenizer.add_special_tokens({'bos_token': '<s>', 'eos_token': '</s>', 'unk_token': '<unk>', 'pad_token': '<unk>'})
+
 model = AutoModelForCausalLM.from_pretrained(model_dir, device_map="cuda", trust_remote_code=True).eval()
 
 belle_prompt = "Human: \n" + "{}" + "\n\nAssistant: \n"
@@ -38,24 +40,15 @@ output = []
 for one in tqdm(data):
     question = one['question']
     text = instruction.format(question)
-    instruct_id = tokenizer.encode(text, add_special_tokens=False)
-    input_cot_id = []
-    for i in range(COT_LEN):
-        input_cot_id.append(START_COT_ID_0 + i)
-    input_cot_id = input_cot_id + [END_COT_ID]
 
-    input_id = instruct_id + input_cot_id
-    input_id = [tokenizer.bos_token_id] + input_id
-    input_ids = torch.tensor([input_id]).to("cuda")
-
-    res = model_call(eos_token_ids=[tokenizer.eos_token_id], inputs=input_ids)
+    res = model_call(eos_token_ids=[tokenizer.eos_token_id], text=text)
 
     new_one = dict(one)
     new_one['response'] = res
     output.append(new_one)
 
 dst_dir = "/nfs/a100-80G-17/kangyu/consistency_hallucinations/BELLE/results"
-with open(os.path.join(dst_dir, "257-cot-tokens_first-round_COT_LEN-{}.json".format(COT_LEN)), 'w') as f:
+with open(os.path.join(dst_dir, "Llama-2-13b_new-cot_2000-samples.json"), 'w') as f:
     json.dump(output, f)
 
 print("Done!")
