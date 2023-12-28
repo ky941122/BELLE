@@ -163,7 +163,7 @@ def preprocess_sft_function(tokenizer, max_cot_length, examples):
         "attention_mask": []
     }
 
-    for question, cot, final_answer in zip(examples["question"], examples["new_cot"], examples["final_answer"]):
+    for question, cot, final_answer in zip(examples["question"], examples["cot"], examples["final_answer"]):
         instruction = "[INST] " + question + " [/INST]"
         instruct_id = tokenizer.encode(instruction, add_special_tokens=False)
 

@@ -10,7 +10,7 @@ export WANDB_RESUME=...
 
 model_name_or_path="/nfs/172.17.3.40/nvme1/a100-test-1node-torchimg-idc/bella/xhsun/llama2-models/Llama-2-13b-chat-hf"
 
-output_dir="/nfs/172.17.1.38/nvme4/kangyu/saved_models/Llama-2-13b_new-cot_2000-samples"
+output_dir="/nfs/172.17.1.38/nvme4/kangyu/saved_models/Llama-2-13b_raw-cot_2000-samples"
 mkdir -p ${output_dir}
 
 train_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/compression_results_by_ppl_from_raw_model.json
