@@ -6,11 +6,11 @@ export PYTHONPATH="$BELLE_PATH/train"
 
 model_name_or_path="/nfs/172.17.3.40/nvme1/a100-test-1node-torchimg-idc/bella/xhsun/llama2-models/Llama-2-13b-chat-hf"
 
-output_dir="/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_1"
+output_dir="/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_2"
 mkdir -p ${output_dir}
 
-train_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/gsm8k_train_split_1.json
-test_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/gsm8k_test_split_1.json
+train_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/gsm8k_train_split_2.json
+test_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/gsm8k_test_split_2.json
 
 cache_dir=hf_cache_dir
 mkdir -p ${cache_dir}
