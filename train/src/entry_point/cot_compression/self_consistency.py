@@ -158,6 +158,7 @@ def main():
         "pad_token_id": tokenizer.pad_token_id,
         "eos_token_id": tokenizer.eos_token_id,
         "temperature": 0.5,
+        "max_new_tokens": 512,
     }
 
     # split dataset into sub-dataset for robust
