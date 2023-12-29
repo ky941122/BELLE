@@ -30,7 +30,7 @@ accelerate launch \
     --model_name $model_name_or_path \
     --instruction_data $instruction_file \
     --cache_dir $cache_dir \
-    --inference_batch_size_per_device 12 \
+    --inference_batch_size_per_device 8 \
     --max_prompt_length 2048 \
     --n_best_nums 20 \
     --load_in_8bit False \
