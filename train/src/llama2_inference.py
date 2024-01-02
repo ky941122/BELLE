@@ -5,7 +5,7 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from tqdm import tqdm
 
-model_dir = "/nfs/172.17.1.38/nvme4/kangyu/saved_models/Llama-2-13b_raw-cot_2000-samples"
+model_dir = "/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_full-train-full-gen_consistency"
 
 tokenizer = AutoTokenizer.from_pretrained(model_dir, trust_remote_code=True)
 tokenizer.add_special_tokens({'bos_token': '<s>', 'eos_token': '</s>', 'unk_token': '<unk>', 'pad_token': '<unk>'})
@@ -48,7 +48,7 @@ for one in tqdm(data):
     output.append(new_one)
 
 dst_dir = "/nfs/a100-80G-17/kangyu/consistency_hallucinations/BELLE/results"
-with open(os.path.join(dst_dir, "Llama-2-13b_raw-cot_2000-samples.json"), 'w') as f:
+with open(os.path.join(dst_dir, "Llama-2-13b_GSM8K_full-train-full-gen_consistency.json"), 'w') as f:
     json.dump(output, f)
 
 print("Done!")
