@@ -4,13 +4,13 @@ gpus=8
 BELLE_PATH="/nfs/a100-80G-17/kangyu/consistency_hallucinations/BELLE"
 export PYTHONPATH="$BELLE_PATH/train"
 
-model_name_or_path="/nfs/172.17.3.40/nvme1/a100-test-1node-torchimg-idc/bella/xhsun/llama2-models/Llama-2-13b-chat-hf"
+model_name_or_path="/nfs/a100-80G-15/xytian/myProjects/AI_NLP_GM/pretrained_models/Llama-2-13b-chat-hf"
 
-output_dir="/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K"
+output_dir="/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_full-train-full-gen_consistency"
 mkdir -p ${output_dir}
 
-train_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/implicit_cot/data/gsm8k/train_cot-special-tokens_train.json
-test_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/implicit_cot/data/gsm8k/train_cot-special-tokens_test.json
+train_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/llama2-13b_gsm8k-full-train-full-gen_consistency_cleaned.json
+test_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/llama2-13b_gsm8k-full-train-full-gen_consistency_cleaned.json
 
 cache_dir=hf_cache_dir
 mkdir -p ${cache_dir}
