@@ -6,11 +6,11 @@ export PYTHONPATH="$BELLE_PATH/train"
 
 model_name_or_path="/nfs/a100-80G-15/xytian/myProjects/AI_NLP_GM/pretrained_models/Llama-2-13b-chat-hf"
 
-output_dir="/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_full-train-full-gen_consistency"
+output_dir="/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_k=40_T=05_n=20_round=2"
 mkdir -p ${output_dir}
 
-train_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/llama2-13b_gsm8k-full-train-full-gen_consistency_cleaned.json
-test_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/llama2-13b_gsm8k-full-train-full-gen_consistency_cleaned.json
+train_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/llama2-13b_gsm8k-full-train-full-gen_consistency_k=40_T=05_n=20_round-2_cleaned.json
+test_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/llama2-13b_gsm8k-full-train-full-gen_consistency_k=40_T=05_n=20_round-2_cleaned.json
 
 cache_dir=hf_cache_dir
 mkdir -p ${cache_dir}
