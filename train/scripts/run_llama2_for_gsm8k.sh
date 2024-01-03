@@ -4,9 +4,9 @@ gpus=8
 BELLE_PATH="/nfs/a100-80G-17/kangyu/consistency_hallucinations/BELLE"
 export PYTHONPATH="$BELLE_PATH/train"
 
-model_name_or_path="/nfs/a100-80G-15/xytian/myProjects/AI_NLP_GM/pretrained_models/Llama-2-13b-chat-hf"
+model_name_or_path="/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K"
 
-output_dir="/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_compression-by-gpt4"
+output_dir="/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_first-full-cot_then-compression-by-gpt4"
 mkdir -p ${output_dir}
 
 train_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/gsm8k_train-set_compression_from_gpt4_cleaned.json
