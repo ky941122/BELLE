@@ -153,11 +153,11 @@ def main():
     model.eval()
 
     generation_kwargs = {
-        "top_k": 40,
+        "top_k": 100,
         "do_sample": True,
         "pad_token_id": tokenizer.pad_token_id,
         "eos_token_id": tokenizer.eos_token_id,
-        "temperature": 0.5,
+        "temperature": 1.0,
         "max_new_tokens": 512,
     }
 
