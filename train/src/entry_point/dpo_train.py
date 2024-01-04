@@ -264,6 +264,9 @@ def main():
     t_total_per_epoch = int(math.ceil(training_nums/batch_size))
     t_total = t_total_per_epoch * script_args.num_train_epochs
     eval_and_save_steps = int(t_total_per_epoch * script_args.eval_and_save_ratio_per_epoch)
+
+    eval_and_save_steps = 99999
+
     eval_steps = eval_and_save_steps if script_args.validation_file else None
     save_steps = eval_and_save_steps
     warmup_steps = int(t_total*script_args.warmup_ratio)
@@ -344,6 +347,8 @@ def main():
 
     # train
     dpo_trainer.train()
+
+    dpo_trainer.save_model(script_args.output_dir)
 
     print_rank_0("\n Training completed!!! If there's a warning about missing keys above, please disregard :)", global_rank)
 
