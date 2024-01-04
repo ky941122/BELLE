@@ -1,11 +1,11 @@
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = "6"
+os.environ['CUDA_VISIBLE_DEVICES'] = "7"
 import json
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from tqdm import tqdm
 
-model_dir = "/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_k=100_T=1_n=40_round-2"
+model_dir = "/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_full-CoT_and_compression-CoT-from-gpt4"
 
 tokenizer = AutoTokenizer.from_pretrained(model_dir, trust_remote_code=True)
 tokenizer.add_special_tokens({'bos_token': '<s>', 'eos_token': '</s>', 'unk_token': '<unk>', 'pad_token': '<unk>'})
@@ -18,6 +18,9 @@ START_COT_ID_0 = 32000
 END_COT_ID = 32256
 COT_LEN = 256
 instruction = "[INST] " + "{}" + " [/INST]"
+
+DETAILED_PREFIX = "Answer the following question and provide a detailed thought process:\n"
+SHORTED_PREFIX = "Answer the following question and provide as brief a thought process as possible:\n"
 
 def model_call(eos_token_ids, inputs=None, text=None):
 
@@ -39,6 +42,9 @@ with open("/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/implicit_co
 output = []
 for one in tqdm(data):
     question = one['question']
+
+    question = SHORTED_PREFIX + question
+
     text = instruction.format(question)
 
     res = model_call(eos_token_ids=[tokenizer.eos_token_id], text=text)
@@ -48,7 +54,7 @@ for one in tqdm(data):
     output.append(new_one)
 
 dst_dir = "/nfs/a100-80G-17/kangyu/consistency_hallucinations/BELLE/results"
-with open(os.path.join(dst_dir, "Llama-2-13b_GSM8K_k=100_T=1_n=40_round-2.json"), 'w') as f:
+with open(os.path.join(dst_dir, "Llama-2-13b_GSM8K_full-CoT_and_compression-CoT-from-gpt4_SHORTED.json"), 'w') as f:
     json.dump(output, f)
 
 print("Done!")

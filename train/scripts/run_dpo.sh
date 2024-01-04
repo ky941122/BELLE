@@ -1,33 +1,34 @@
 #! /bin/bash
 
-dataset_name=...
-model_name=...
+BELLE_PATH="/nfs/a100-80G-17/kangyu/consistency_hallucinations/BELLE"
+
 torch_dtype=bfloat16
-per_device_train_batch_size=1
-per_device_eval_batch_size=1
-gradient_accumulation_steps=1
-num_train_epochs=3
+per_device_train_batch_size=2
+per_device_eval_batch_size=2
+gradient_accumulation_steps=8
+num_train_epochs=2
 save_total_limit=1
-learning_rate=...
+learning_rate=1e-6
 weight_decay=0.0001
 warmup_ratio=0.03
 eval_and_save_ratio_per_epoch=0.1
-max_length=...
-max_prompt_length=...
+max_length=2048
+max_prompt_length=2048
 
-model_name_or_path=/.../${model_name}
-train_file=/.../${dataset_name}/${dataset_name}.train.json
-validation_file=/.../${dataset_name}/${dataset_name}.dev.json
+model_name_or_path="/nfs/a100-80G-15/xytian/myProjects/AI_NLP_GM/pretrained_models/Llama-2-13b-chat-hf"
 
-output_model_name=${model_name}_${dataset_name}_${learning_rate}_epoch${num_train_epochs}_${torch_dtype}
-output_dir=/.../${output_model_name}
+train_file=
+validation_file=
 
-logging_dir=/.../${output_model_name}
+output_dir=/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_gpt4-CoT-full-CoT-preference_dpo
+mkdir -p ${output_dir}
+
+logging_dir=${output_dir}
 
 # here we recommend use configs/deepspeed_config_stage3_dpo.json
-deepspeed_config=...
+deepspeed_config=$BELLE_PATH/train/configs/deepspeed_config_stage3_dpo.json
 
-torchrun --nnodes=1 --nproc_per_node=8 ../src/entry_point/dpo_train.py \
+torchrun --nnodes=1 --nproc_per_node=8 $BELLE_PATH/train/src/entry_point/dpo_train.py \
     --ddp_timeout 50000 \
     --model_name_or_path ${model_name_or_path} \
     --torch_dtype ${torch_dtype} \
