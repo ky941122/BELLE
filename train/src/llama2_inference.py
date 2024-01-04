@@ -1,11 +1,11 @@
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = "6"
+os.environ['CUDA_VISIBLE_DEVICES'] = "7"
 import json
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from tqdm import tqdm
 
-model_dir = "/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_full-CoT_and_compression-CoT-from-gpt4"
+model_dir = "/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_gpt4-CoT-full-CoT-preference_dpo"
 
 tokenizer = AutoTokenizer.from_pretrained(model_dir, trust_remote_code=True)
 tokenizer.add_special_tokens({'bos_token': '<s>', 'eos_token': '</s>', 'unk_token': '<unk>', 'pad_token': '<unk>'})
@@ -43,7 +43,7 @@ output = []
 for one in tqdm(data):
     question = one['question']
 
-    question = DETAILED_PREFIX + question
+    # question = DETAILED_PREFIX + question
 
     text = instruction.format(question)
 
@@ -54,7 +54,7 @@ for one in tqdm(data):
     output.append(new_one)
 
 dst_dir = "/nfs/a100-80G-17/kangyu/consistency_hallucinations/BELLE/results"
-with open(os.path.join(dst_dir, "Llama-2-13b_GSM8K_full-CoT_and_compression-CoT-from-gpt4_DETAILED.json"), 'w') as f:
+with open(os.path.join(dst_dir, "Llama-2-13b_GSM8K_gpt4-CoT-full-CoT-preference_dpo.json"), 'w') as f:
     json.dump(output, f)
 
 print("Done!")
