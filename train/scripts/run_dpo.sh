@@ -2,6 +2,8 @@
 
 BELLE_PATH="/nfs/a100-80G-17/kangyu/consistency_hallucinations/BELLE"
 
+export PYTHONPATH="$BELLE_PATH/train"
+
 torch_dtype=bfloat16
 per_device_train_batch_size=2
 per_device_eval_batch_size=2
