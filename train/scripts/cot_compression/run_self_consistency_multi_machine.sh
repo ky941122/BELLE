@@ -9,9 +9,9 @@ RANK=$3
 MASTER_ADDR=$4
 MASTER_PORT=$5
 
-model_name_or_path="/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K"
+model_name_or_path="/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_k=100_T=1_n=40_round-2"
 
-output_dir="$BELLE_PATH/results/Llama-2-13b_GSM8K-full_consistency_k=100_T=1_n=200_round-1"
+output_dir="$BELLE_PATH/results/Llama-2-13b_GSM8K-full_consistency_k=100_T=1_n=200_round-3"
 mkdir -p ${output_dir}
 
 instruction_file="/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/implicit_cot/data/gsm8k/train_cot-special-tokens_train.json"
