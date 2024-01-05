@@ -11,7 +11,7 @@ MASTER_PORT=$5
 
 model_name_or_path="/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_k=100_T=1_n=40_round-2"
 
-output_dir="$BELLE_PATH/results/Llama-2-13b_GSM8K-full_consistency_k=100_T=1_n=200_round-3"
+output_dir="$BELLE_PATH/results/Llama-2-13b_GSM8K-full_consistency_k=100_T=1_n=500_round-3"
 mkdir -p ${output_dir}
 
 instruction_file="/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/implicit_cot/data/gsm8k/train_cot-special-tokens_train.json"
@@ -32,7 +32,7 @@ accelerate launch \
     --cache_dir $cache_dir \
     --inference_batch_size_per_device 10 \
     --max_prompt_length 2048 \
-    --n_best_nums 200 \
+    --n_best_nums 500 \
     --load_in_8bit False \
     --load_in_4bit False \
     --output_dir $output_dir \
