@@ -36,5 +36,5 @@ accelerate launch \
     --load_in_8bit False \
     --load_in_4bit False \
     --output_dir $output_dir \
-    --start_n_sub 0 \
+    --start_n_sub 2 \
     --debug False
