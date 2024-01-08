@@ -8,21 +8,21 @@ torch_dtype=bfloat16
 per_device_train_batch_size=2
 per_device_eval_batch_size=2
 gradient_accumulation_steps=8
-num_train_epochs=2
+num_train_epochs=1
 save_total_limit=1
-learning_rate=1e-6
+learning_rate=8e-7
 weight_decay=0.0001
 warmup_ratio=0.03
 eval_and_save_ratio_per_epoch=0.1
 max_length=2048
 max_prompt_length=2048
 
-model_name_or_path="/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K"
+model_name_or_path="/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_k=100_T=1_n=200_round-3"
 
-train_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/gsm8k_train-set_gpt4-CoT-full-CoT-preference_for-dpo.json
-validation_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/gsm8k_train-set_gpt4-CoT-full-CoT-preference_for-dpo.json
+train_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/Llama-2-13b_GSM8K_k=100_T=1_n=200_round-3_length-preference_for-dpo.json
+validation_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/Llama-2-13b_GSM8K_k=100_T=1_n=200_round-3_length-preference_for-dpo.json
 
-output_dir=/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_first-full-CoT_then-gpt4-CoT-vs-full-CoT-preference_dpo
+output_dir=/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_k=100_T=1_n=200_round-3_length-preference_dpo
 mkdir -p ${output_dir}
 
 logging_dir=${output_dir}
