@@ -20,7 +20,7 @@ max_prompt_length=2048
 model_name_or_path="/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_k=100_T=1_n=200_round-3"
 
 train_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/Llama-2-13b_GSM8K_k=100_T=1_n=200_round-3_length-preference_for-dpo.json
-validation_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/Llama-2-13b_GSM8K_k=100_T=1_n=200_round-3_length-preference_for-dpo.json
+#validation_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/Llama-2-13b_GSM8K_k=100_T=1_n=200_round-3_length-preference_for-dpo.json
 
 output_dir=/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_k=100_T=1_n=200_round-3_length-preference_dpo
 mkdir -p ${output_dir}
