@@ -4,6 +4,12 @@ BELLE_PATH="/nfs/a100-80G-17/kangyu/consistency_hallucinations/BELLE"
 
 export PYTHONPATH="$BELLE_PATH/train"
 
+WORKER_GPU=$1
+WORKER_NUM=$2
+RANK=$3
+MASTER_ADDR=$4
+MASTER_PORT=$5
+
 torch_dtype=bfloat16
 per_device_train_batch_size=2
 per_device_eval_batch_size=2
@@ -30,7 +36,8 @@ logging_dir=${output_dir}
 # here we recommend use configs/deepspeed_config_stage3_dpo.json
 deepspeed_config=$BELLE_PATH/train/configs/deepspeed_config_stage3_dpo.json
 
-torchrun --nnodes=1 --nproc_per_node=8 $BELLE_PATH/train/src/entry_point/dpo_train.py \
+torchrun --nnodes=$WORKER_NUM --nproc_per_node=8 --master_addr=$MASTER_ADDR --master_port=$MASTER_PORT \
+    --node_rank=$RANK $BELLE_PATH/train/src/entry_point/dpo_train.py \
     --ddp_timeout 50000 \
     --model_name_or_path ${model_name_or_path} \
     --torch_dtype ${torch_dtype} \
