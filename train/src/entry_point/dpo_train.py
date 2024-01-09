@@ -262,8 +262,14 @@ def main():
     train_dataset = Dataset.from_list(train_dataset)
 
 
-    eval_dataset = load_dataset("json", data_files=script_args.validation_file)[
-        'train'].shuffle() if script_args.validation_file else None
+    # eval_dataset = load_dataset("json", data_files=script_args.validation_file)[
+    #     'train'].shuffle() if script_args.validation_file else None
+
+
+    with open(script_args.train_file, 'r') as f:
+        eval_dataset = json.load(f)
+    eval_dataset = Dataset.from_list(eval_dataset)
+
 
     # cal some hyperparameters
     training_nums = len(train_dataset)
@@ -275,7 +281,7 @@ def main():
     t_total = t_total_per_epoch * script_args.num_train_epochs
     eval_and_save_steps = int(t_total_per_epoch * script_args.eval_and_save_ratio_per_epoch)
 
-    eval_and_save_steps = 99999
+    eval_and_save_steps = 999999
 
     eval_steps = eval_and_save_steps if script_args.validation_file else None
     save_steps = eval_and_save_steps
