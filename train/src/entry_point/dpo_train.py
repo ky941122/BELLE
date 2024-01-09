@@ -254,21 +254,21 @@ def main():
     ... ...
     """
 
-    # train_dataset = load_dataset("json", data_files=script_args.train_file)['train'].shuffle()
+    train_dataset = load_dataset("json", data_files=script_args.train_file)['train'].shuffle()
 
 
-    with open(script_args.train_file, 'r') as f:
-        train_dataset = json.load(f)
-    train_dataset = Dataset.from_list(train_dataset)
+    # with open(script_args.train_file, 'r') as f:
+    #     train_dataset = json.load(f)
+    # train_dataset = Dataset.from_list(train_dataset)
 
 
-    # eval_dataset = load_dataset("json", data_files=script_args.validation_file)[
-    #     'train'].shuffle() if script_args.validation_file else None
+    eval_dataset = load_dataset("json", data_files=script_args.validation_file)[
+        'train'].shuffle() if script_args.validation_file else None
 
 
-    with open(script_args.validation_file, 'r') as f:
-        eval_dataset = json.load(f)
-    eval_dataset = Dataset.from_list(eval_dataset)
+    # with open(script_args.validation_file, 'r') as f:
+    #     eval_dataset = json.load(f)
+    # eval_dataset = Dataset.from_list(eval_dataset)
 
 
     # cal some hyperparameters
