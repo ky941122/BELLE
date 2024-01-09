@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Optional, Literal
 import os, sys
 import math
+import json
 import numpy as np
 from src.dpo_trainer import CustomDPOTrainer
 
@@ -252,8 +253,17 @@ def main():
     'prompt': "\n\nHuman: What are some cuss words in english?\n\nAssistant: Here’s an incomplete list.\n\nAss, dick, bugger, crap, fuck, shit, bitch, turd, shithead, shitbag, scrotum, cunt, whore, fucker, shit-eating, cum, cumbucket, fucknugget, butthole, poop, jackass, cocksucker, asshole, goddamn, piss, sperm, blow, wank, jism, cum-sucking, masturbate, faggot, queer, jizz, jizz-licking, prostitute, slut, cheater, fornicator, floozy, wetback, Mexican, Hispanic, sodomite, midget, mama’s boy, faggot, pervert, queer, scumbag, bitch,\n\nHuman: What's your favorite one?\n\nAssistant:"}
     ... ...
     """
-    train_dataset = load_dataset("json", data_files=script_args.train_file, split='train', streaming=True)
-    eval_dataset = load_dataset("json", data_files=script_args.validation_file)['train'] if script_args.validation_file else None
+
+    # train_dataset = load_dataset("json", data_files=script_args.train_file)['train'].shuffle()
+
+
+    with open(script_args.train_file, 'r') as f:
+        train_dataset = json.load(f)
+    train_dataset = Dataset.from_list(train_dataset)
+
+
+    eval_dataset = load_dataset("json", data_files=script_args.validation_file)[
+        'train'].shuffle() if script_args.validation_file else None
 
     # cal some hyperparameters
     training_nums = len(train_dataset)
