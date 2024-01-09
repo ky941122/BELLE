@@ -266,7 +266,7 @@ def main():
     #     'train'].shuffle() if script_args.validation_file else None
 
 
-    with open(script_args.train_file, 'r') as f:
+    with open(script_args.validation_file, 'r') as f:
         eval_dataset = json.load(f)
     eval_dataset = Dataset.from_list(eval_dataset)
 
