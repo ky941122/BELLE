@@ -25,10 +25,10 @@ max_prompt_length=2048
 
 model_name_or_path="/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_k=100_T=1_n=40_round-2"
 
-train_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/Llama-2-13b_GSM8K_k=100_T=1_n=500_round-3_length-preference_sample-7w_for-dpo.json
-validation_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/Llama-2-13b_GSM8K_k=100_T=1_n=500_round-3_length-preference_sample-7w_for-dpo.json
+train_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/Llama-2-13b_GSM8K_k=100_T=1_n=500_round-3_correct-and-length-preference_sample-14w_for-dpo.json
+validation_file=/nfs/a100-80G-17/kangyu/consistency_hallucinations/trytry/cot_compression/data/Llama-2-13b_GSM8K_k=100_T=1_n=500_round-3_correct-and-length-preference_sample-14w_for-dpo.json
 
-output_dir=/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_k=100_T=1_n=40_round-2+length-preference_sample-7w_DPO
+output_dir=/nfs/a100-80G-14/kangyu/saved_models/Llama-2-13b_GSM8K_k=100_T=1_n=40_round-2+correct-and-length-preference_sample-14w_DPO
 mkdir -p ${output_dir}
 
 logging_dir=${output_dir}
