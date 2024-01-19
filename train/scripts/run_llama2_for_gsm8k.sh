@@ -40,3 +40,4 @@ accelerate launch \
     --output_dir $output_dir \
     --debug False \
     --lr_scheduler_type "cosine"
+

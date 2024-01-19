@@ -170,7 +170,9 @@ def preprocess_sft_function(tokenizer, max_cot_length, examples):
 
 
 
+
         cot = new_cot
+
 
 
 
